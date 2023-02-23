@@ -2,11 +2,11 @@ library(tidyverse)
 
 library(readxl)
 
-source('read_geos.R')
+source('./functions/read_geos.R')
 
-source('read_acs.R')
+source('./functions/read_acs.R')
 
-source('county_ami.R')
+source('./functions/county_ami.R')
 
 
 end_year = 2021
@@ -17,26 +17,21 @@ selected_tables <- c('b25063', 'b25075', 'b25038')
 selected_summary_levels <- c('055', '162')
 
 
-acs_dl <- read_acs(
-    table_name = selected_tables,
-    n_year = 5,
-    end_year = 2021,
-    summary_levels = selected_summary_levels,
-    excluded_cols = c('sumlevel',
-                      'margin_of_error',
-                      'universe')
-) %>%
-    filter(
-        !measure_id %in% c(
-            'B25063_027',
-            'B25063_001',
-            'B25063_002',
-            'B25038_001',
-            'B25038_002',
-            'B25038_009',
-            'B25075_001'
-        )
-    )
+acs_dl <- read_acs(table_name = selected_tables,
+                   n_year = 5,
+                   end_year = 2021,
+                   summary_levels = selected_summary_levels,
+                   excluded_cols = c('sumlevel',
+                                      'margin_of_error',
+                                      'universe')) %>%
+           filter(!measure_id %in% c('B25063_027',
+                                     'B25063_001',
+                                     'B25063_002',
+                                     'B25038_001',
+                                     'B25038_002',
+                                     'B25038_009',
+                                     'B25075_001')
+                  )
 
 
 
@@ -45,8 +40,7 @@ acs_own <- acs_dl %>%
     mutate(range = case_when(
         str_detect(label, 'Less than') ~ str_replace(label, 'Less than', '$0 to'),
         str_detect(label, 'or more')  ~ str_replace(label, 'or more', 'to $5,252,000'),
-        TRUE ~ label
-    )) %>%
+        TRUE ~ label)) %>%
     mutate(range = str_remove_all(range, '[^[:digit:]. ]')) %>% 
     separate(range, into = c('range_min','range_max')) %>% 
     select(geoid,geography_name,title,range_min,range_max,estimate)
@@ -64,36 +58,27 @@ acs_rent <- acs_dl %>%
 
 acs_available_units <- acs_dl %>%
     filter(title == 'TENURE BY YEAR HOUSEHOLDER MOVED INTO UNIT') %>%
-    mutate(
-        title   = if_else(
-            measure_id %in% c(
-                'B25038_003',
-                'B25038_004',
-                'B25038_005',
-                'B25038_006',
-                'B25038_007',
-                'B25038_008'
-            ),
-            'VALUE',
-            'GROSS RENT'
-        ),
-        recent_mover = if_else(
-            measure_id %in% c('B25038_003',
-                              'B25038_004',
-                              'B25038_010',
-                              'B25038_011'),
-            estimate,
-            0
-        )
-    ) %>%
+    mutate(title = if_else(measure_id %in% c('B25038_003',
+                                             'B25038_004',
+                                             'B25038_005',
+                                             'B25038_006',
+                                             'B25038_007',
+                                             'B25038_008'),
+                            'VALUE',
+                            'GROSS RENT'),
+            recent_mover = if_else(measure_id %in% c('B25038_003',
+                                                     'B25038_004',
+                                                     'B25038_010',
+                                                     'B25038_011'),
+                                    estimate,
+                                    0)) %>%
     group_by(geoid, title) %>%
     summarise(proration_available_units = sum(recent_mover) / sum(estimate)) %>% 
     ungroup()
 
 geos_dl <- read_geos(end_year = end_year,
                      n_year = n_year,
-                     excluded_suffixes=c(', Colorado')
-                     )
+                     excluded_suffixes=c(', Colorado'))
 
 geos_counties <- geos_dl %>%
     filter(sumlevel == '055') %>%
@@ -172,7 +157,6 @@ affordable_to <-  function(amount,tenure){
     
 }
 
-affordable_units <- 
 
 results <- bind_rows(acs_own,acs_rent) %>% 
     left_join(acs_available_units, by = c('geoid','title')) %>% 
