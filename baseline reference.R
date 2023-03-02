@@ -2,11 +2,11 @@ library(tidyverse)
 
 library(readxl)
 
-source('read_geos.R')
+source('.fuctions/read_geos.R')
 
-source('get_acs.R')
+source('.fuctions/read_acs.R')
 
-source('county_ami.R')
+source('.fuctions/county_ami.R')
 
 
 end_year = 2021
