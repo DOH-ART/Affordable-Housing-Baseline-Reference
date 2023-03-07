@@ -1,0 +1,1 @@
+run C:\Users\bmadalon\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Anaconda3 (64-bit)\Anaconda Powershell Prompt (Anaconda3).lnk streamlit run C:\Users\bmadalon\Documents\GitHub\Affordable-Housing-Baseline-Reference\streamlit_app.py

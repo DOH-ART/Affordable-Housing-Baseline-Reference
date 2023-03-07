@@ -5,7 +5,8 @@ import numpy as np
 
 st.title('practice app')
 
-data_url = ('https://github.com/DOH-ART/Affordable-Housing-Baseline-Reference/blob/add-years-hh-to-county_ami/acs.csv')
+acs_data_url = (r'C:\Users\bmadalon\Documents\GitHub\Affordable-Housing-Baseline-Reference\acs.csv')\
+
 
 def load_data(nrows):
     data = pd.read_csv(data_url, nrows=nrows)
@@ -14,5 +15,6 @@ def load_data(nrows):
     return data
 
 data_load = st.text('Loading Data..')
-data = load_data(100)
+acs_data = load_data(100)
+income_data = load_data(100)
 data_load.text('Loading Data...done')
