@@ -8,7 +8,6 @@ datasets = st.container()
 
 acs_data_url = (r'C:\Users\bmadalon\Documents\GitHub\Affordable-Housing-Baseline-Reference\acs.csv')
 income_data_url = (r'C:\Users\bmadalon\Documents\GitHub\Affordable-Housing-Baseline-Reference\income_limits.csv')
-acs_baseline_options_url = (r'C:\Users\bmadalon\Documents\GitHub\Affordable-Housing-Baseline-Reference\ACS Baseline Options.csv')
 
 def load_data(data_url):
     data = pd.read_csv(data_url)
