@@ -6,8 +6,8 @@ import numpy as np
 st.title('Baseline App')
 datasets = st.container()
 
-acs_data_url = (r'C:\Users\bmadalon\Documents\GitHub\Affordable-Housing-Baseline-Reference\acs.csv')
-income_data_url = (r'C:\Users\bmadalon\Documents\GitHub\Affordable-Housing-Baseline-Reference\income_limits.csv')
+acs_data_url = (r'./acs.csv')
+income_data_url = (r'./income_limits.csv')
 
 def load_data(data_url):
     data = pd.read_csv(data_url)
