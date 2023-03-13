@@ -15,7 +15,6 @@ def load_data(data_url):
     data.rename(lowercase, axis='columns',inplace=True)
     return data
 
-st.text('Welcome to the data thing that needs a good name!')
 
 with datasets:
     acs_data = load_data(acs_data_url)
@@ -49,11 +48,8 @@ locality_submittedIncome = income_data[income_data['geoid'] == geoid_location[0]
 Income_dataYear = locality_submittedIncome[locality_submittedIncome['il_year'] == ILY]
 Income_dataIL_type = Income_dataYear[Income_dataYear['il_type'].str.contains(adjacency)]
 Income_data_hhsize = Income_dataIL_type[Income_dataIL_type['il_hh_size'] == HH_size]
-st.write(Income_data_hhsize)
 Renter_medianIncome = ((Income_data_hhsize['income_limit'].tolist()[0]*.6)//12)*.3
 Owner_medianIncome = ((Income_data_hhsize['income_limit'].tolist()[0]*1))*3.5
-st.write(Owner_medianIncome)
-st.write(Renter_medianIncome)
 locality_submittedRenter = locality_submitted[(locality_submitted['range_max'] <= float(Renter_medianIncome)) & (locality_submitted['title'].str.contains('GROSS RENT'))]
 locality_submittedOwner = locality_submitted[(locality_submitted['range_max'] <= float(Owner_medianIncome)) & (locality_submitted['title'].str.contains('VALUE'))]
 st.write(locality_submittedRenter)
