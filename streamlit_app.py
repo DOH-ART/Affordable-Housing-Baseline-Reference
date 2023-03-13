@@ -27,9 +27,9 @@ acs_data['geography_name'] = acs_data['geography_name'].astype(str)
 
 col1, col2 = st.columns((1,1))
 with col1:
-    SaleUnitAvailabilityRate = st.slider('Sale unit Availability Rate',0,100,100)
+    SaleUnitAvailabilityRate = st.slider('Sale unit Availability Rate',0.0,1.0,1.0,.01)
 with col2:
-    RentalUnitAvailabilityRate = st.slider('Rental Unit Availability Rate',0,100,60)
+    RentalUnitAvailabilityRate = st.slider('Rental Unit Availability Rate',0.0,1.0,.6,.01)
 
 #Input widgets for sidebar
 with st.sidebar:
@@ -43,7 +43,7 @@ with st.sidebar:
 
 acs_data['range_max'] = acs_data['range_max'].astype(float)
 locality_submitted = acs_data[acs_data['geoid'] == geoid_location[0]]
-#locality submitted rental and ownership VALUE AND GROSS RENT 
+#new column available units estimate * slider 
 locality_submittedIncome = income_data[income_data['geoid'] == geoid_location[0]]
 Income_dataYear = locality_submittedIncome[locality_submittedIncome['il_year'] == ILY]
 Income_dataIL_type = Income_dataYear[Income_dataYear['il_type'].str.contains(adjacency)]
@@ -54,7 +54,9 @@ locality_submittedRenter = locality_submitted[(locality_submitted['range_max'] <
 locality_submittedOwner = locality_submitted[(locality_submitted['range_max'] <= float(Owner_medianIncome)) & (locality_submitted['title'].str.contains('VALUE'))]
 st.write(locality_submittedRenter)
 st.write(locality_submittedOwner)
-LocalitySubmittedSum_Owner = sum(locality_submittedOwner['estimate'])*HVtoIncome_slider
-LocalitySubmittedSum_Rent = sum(locality_submittedRenter['estimate'])*HVtoIncome_slider
+locality_submittedOwner['Available Units'] = locality_submittedOwner['estimate'] * SaleUnitAvailabilityRate
+locality_submittedRenter['Available Units'] = locality_submittedRenter['estimate'] * RentalUnitAvailabilityRate
+LocalitySubmittedSum_Owner = sum(locality_submittedOwner['Available Units'])*HVtoIncome_slider
+LocalitySubmittedSum_Rent = sum(locality_submittedRenter['Available Units'])
 result =  (LocalitySubmittedSum_Rent + LocalitySubmittedSum_Owner)* 3.333 * 12
 st.metric(label = 'Baseline Estimate', value = result)
