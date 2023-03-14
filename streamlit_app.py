@@ -38,7 +38,7 @@ with st.sidebar:
     avail_locations = acs_data['geography_name'].drop_duplicates().to_list()
     location = st.selectbox('County or Municipality',avail_locations)
 
-    geoid_location = list(set(acs_data['geoid'][acs_data['geography_name'] == location].unique()))
+    geoid_location = list(set(acs_data['geoid'][acs_data['geography_name'] == location]))
 
     avail_names = income_data['il_name'].drop_duplicates().to_list()
     name = st.selectbox('Income Limit Type',avail_names)
@@ -52,7 +52,8 @@ with st.sidebar:
 
     if name == 'Area Median Income':
         HH_size = st.slider('Household Size',1,8,3)
-    else: HH_size = 0
+    else: 
+        HH_size = 0
 
     avail_years = (income_data.query("geoid == @geoid_location")
                               .query("il_name == @name")
@@ -126,8 +127,10 @@ locality_submittedRenter['Available Units'] = round(locality_submittedRenter['es
 ##the percent of units that are affordable should be calculated by comparing the
 ##range_min and range_max to either max_affordable_rent or max_affordable_price to
 ##this is already set up to feed into Affordable Units once it is populated
-locality_submittedOwner['Percent of Units Affordable'] = 0
-locality_submittedRenter['Percent of Units Affordable'] = 0
+
+
+locality_submittedOwner['Percent of Units Affordable'] = sum(locality_submittedOwner['Available Units'][locality_submittedOwner['range_max'] <= max_affordable_price]) / sum(locality_submittedOwner['estimate'])
+locality_submittedRenter['Percent of Units Affordable'] = sum(locality_submittedRenter['Available Units'][locality_submittedRenter['range_max'] <= max_affordable_rent]) / sum(locality_submittedRenter['estimate'])
 
 locality_submittedOwner['Affordable Units'] = round(locality_submittedOwner['Percent of Units Affordable'] * locality_submittedOwner['Available Units'])
 locality_submittedRenter['Affordable Units'] = round(locality_submittedRenter['Percent of Units Affordable'] * locality_submittedRenter['Available Units'])
