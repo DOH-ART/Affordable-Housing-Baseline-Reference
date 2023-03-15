@@ -128,9 +128,30 @@ locality_submittedRenter['Available Units'] = round(locality_submittedRenter['es
 ##range_min and range_max to either max_affordable_rent or max_affordable_price to
 ##this is already set up to feed into Affordable Units once it is populated
 
+#800 rental side, 200,000 ownership bucket 
+locality_submittedOwner['Percent of Units Affordable'] = 0
+for idx, rows in locality_submittedOwner.iterrows():
+    if rows['range_max'] <= max_affordable_price:
+        locality_submittedOwner.at[idx,'Percent of Units Affordable'] = 1
+    elif rows['range_min'] <= max_affordable_price and rows['range_max'] >= max_affordable_price:
+        locality_submittedOwner.at[idx,'Percent of Units Affordable'] = max_affordable_price / rows['range_max']
+    else:
+        locality_submittedOwner.at[idx,'Percent of Units Affordable'] = 0
 
-locality_submittedOwner['Percent of Units Affordable'] = sum(locality_submittedOwner['Available Units'][locality_submittedOwner['range_max'] <= max_affordable_price]) / sum(locality_submittedOwner['estimate'])
-locality_submittedRenter['Percent of Units Affordable'] = sum(locality_submittedRenter['Available Units'][locality_submittedRenter['range_max'] <= max_affordable_rent]) / sum(locality_submittedRenter['estimate'])
+locality_submittedRenter['Percent of Units Affordable'] = 0
+for idx, rows in locality_submittedRenter.iterrows():
+    if rows['range_max'] <= max_affordable_rent:
+        locality_submittedRenter.at[idx,'Percent of Units Affordable'] = 1
+    elif rows['range_min'] <= max_affordable_rent and rows['range_max'] >= max_affordable_rent:
+        locality_submittedRenter.at[idx,'Percent of Units Affordable'] = max_affordable_rent / rows['range_max']
+    else:
+        locality_submittedRenter.at[idx,'Percent of Units Affordable'] = 0
+        
+percent_affordable_owner = sum(locality_submittedOwner['Available Units'][locality_submittedOwner['range_max'] <= max_affordable_price]) / sum(locality_submittedOwner['estimate'])
+percent_affordable_rental = sum(locality_submittedRenter['Available Units'][locality_submittedRenter['range_max'] <= max_affordable_rent]) / sum(locality_submittedRenter['estimate'])
+
+st.metric(label = 'Percent of total amount of For-Sale Affordability',value = percent_affordable_owner)
+st.metric(label = 'Percent of total amount of Rental Affordability',value = percent_affordable_rental)
 
 locality_submittedOwner['Affordable Units'] = round(locality_submittedOwner['Percent of Units Affordable'] * locality_submittedOwner['Available Units'])
 locality_submittedRenter['Affordable Units'] = round(locality_submittedRenter['Percent of Units Affordable'] * locality_submittedRenter['Available Units'])
