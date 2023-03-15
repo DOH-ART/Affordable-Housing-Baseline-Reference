@@ -61,6 +61,16 @@ with st.sidebar:
                               .to_list())
     ILY = st.selectbox('Income Limit Year',avail_years)
 
+    median_income = (income_data.query("geoid == @geoid_location")
+                   .query("il_name == @name")
+                   .query("il_type == @adjacency")
+                   .query("il_hh_size == @HH_size")
+                   .query('il_year == @ILY')
+                   .loc[:, 'income_limit']
+                   .to_list()[0])
+    st.metric(label = 'Selected Median income',value = f"${median_income:,}")
+    
+
 col1, col2 = st.columns((1,1))
 with col1:
     SaleUnitAvailabilityRateDefault = (acs_data.query("geoid == @geoid_location")
@@ -77,35 +87,33 @@ with col2:
                                                .to_list())
     RentalUnitAvailabilityRate = st.slider('Rental Unit Availability Rate',0.0,1.0,SaleUnitAvailabilityRateDefault,.01)
 
-   
-median_income = (income_data.query("geoid == @geoid_location")
-                   .query("il_name == @name")
-                   .query("il_type == @adjacency")
-                   .query("il_hh_size == @HH_size")
-                   .query('il_year == @ILY')
-                   .loc[:, 'income_limit']
-                   .to_list()[0])
 
-renter_income_limit = median_income * .6
+
+
+renter_income_limit = round(median_income * .6)
 
 owner_income_limit = median_income
 
-max_affordable_rent = ((renter_income_limit/12)*.3)
-max_affordable_price = owner_income_limit * HVtoIncome_slider
+max_affordable_rent = round((renter_income_limit/12)*.3)
+max_affordable_price = round(owner_income_limit * HVtoIncome_slider)
+
+
 
 col3, col4 = st.columns((1,1))
 with col3:
-    st.metric(label = 'Selected Median income',value = median_income)
+    st.metric(label = 'Homeowner/Homebuyer Income Limit',value = f"${owner_income_limit:,}")
+
 with col4:    
-    st.metric(label = 'Homeowner/Homebuyer Income Limit',value = owner_income_limit)
+    st.metric(label = 'Renter Income Limit',value = f"${renter_income_limit:,}")
 
 col5, col6 = st.columns((1,1))
 with col5:
-    st.metric(label = 'Renter Income Limit',value = renter_income_limit)
+    st.metric(label = 'Max Affordable For-Sale Price',value = f"${max_affordable_price:,}")
+    
 with col6:
-    st.metric(label = 'Max Affordable Rent',value = max_affordable_rent)
+    st.metric(label = 'Max Affordable Rent',value = f"${max_affordable_rent:,}")
 
-st.metric(label = 'Max Affordable For-Sale Price',value = max_affordable_price)
+
 
 acs_data['range_max'] = acs_data['range_max'].astype(float)
 locality_submitted = acs_data[acs_data['geoid'] == geoid_location[0]]
@@ -158,9 +166,9 @@ percent_affordable_rental = sum(locality_submittedRenter['Available Units'][loca
 
 col7, col8 = st.columns((1,1))
 with col7:
-    st.metric(label = 'Percent of total amount of For-Sale Affordability',value = percent_affordable_owner)
+    st.metric(label = 'Percent Ownership Stock Included in Baseline',value = f"{percent_affordable_owner:.1%}")
 with col8:
-    st.metric(label = 'Percent of total amount of Rental Affordability',value = percent_affordable_rental)
+    st.metric(label = 'Percent of Rental Stock Included in Baseline',value = f"{percent_affordable_rental:.1%}" )
 
 locality_submittedOwner['Affordable Units'] = round(locality_submittedOwner['Percent of Units Affordable'] * locality_submittedOwner['Available Units'])
 locality_submittedRenter['Affordable Units'] = round(locality_submittedRenter['Percent of Units Affordable'] * locality_submittedRenter['Available Units'])
@@ -169,5 +177,5 @@ locality_submittedRenter['Affordable Units'] = round(locality_submittedRenter['P
 #st.write(locality_submittedOwner)
 LocalitySubmittedSum_Owner = sum(locality_submittedOwner['Affordable Units'])
 LocalitySubmittedSum_Rent = sum(locality_submittedRenter['Affordable Units'])
-result =  (LocalitySubmittedSum_Rent + LocalitySubmittedSum_Owner)
-st.metric(label = 'Baseline Estimate', value = result)
+result =  round(LocalitySubmittedSum_Rent + LocalitySubmittedSum_Owner)
+st.metric(label = 'Baseline Estimate', value = f'{result:,}' )
