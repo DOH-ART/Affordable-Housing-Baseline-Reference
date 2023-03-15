@@ -24,9 +24,7 @@ def load_data(data_url):
 
 with datasets:
     acs_data = load_data(acs_data_url)
-    st.write(acs_data.head())
     income_data = load_data(income_data_url)
-    st.write(income_data.head())
     HVtoIncome_slider = st.slider('Home Value to Income Ratio',2.5,4.5,3.5,.01)
 
 acs_data['geography_name'] = acs_data['geography_name'].astype(str)
@@ -95,10 +93,18 @@ owner_income_limit = median_income
 max_affordable_rent = ((renter_income_limit/12)*.3)
 max_affordable_price = owner_income_limit * HVtoIncome_slider
 
-st.metric(label = 'Selected Median income',value = median_income)
-st.metric(label = 'Homeowner/Homebuyer Income Limit',value = owner_income_limit)
-st.metric(label = 'Renter Income Limit',value = renter_income_limit)
-st.metric(label = 'Max Affordable Rent',value = max_affordable_rent)
+col3, col4 = st.columns((1,1))
+with col3:
+    st.metric(label = 'Selected Median income',value = median_income)
+with col4:    
+    st.metric(label = 'Homeowner/Homebuyer Income Limit',value = owner_income_limit)
+
+col5, col6 = st.columns((1,1))
+with col5:
+    st.metric(label = 'Renter Income Limit',value = renter_income_limit)
+with col6:
+    st.metric(label = 'Max Affordable Rent',value = max_affordable_rent)
+
 st.metric(label = 'Max Affordable For-Sale Price',value = max_affordable_price)
 
 acs_data['range_max'] = acs_data['range_max'].astype(float)
@@ -150,14 +156,17 @@ for idx, rows in locality_submittedRenter.iterrows():
 percent_affordable_owner = sum(locality_submittedOwner['Available Units'][locality_submittedOwner['range_max'] <= max_affordable_price]) / sum(locality_submittedOwner['estimate'])
 percent_affordable_rental = sum(locality_submittedRenter['Available Units'][locality_submittedRenter['range_max'] <= max_affordable_rent]) / sum(locality_submittedRenter['estimate'])
 
-st.metric(label = 'Percent of total amount of For-Sale Affordability',value = percent_affordable_owner)
-st.metric(label = 'Percent of total amount of Rental Affordability',value = percent_affordable_rental)
+col7, col8 = st.columns((1,1))
+with col7:
+    st.metric(label = 'Percent of total amount of For-Sale Affordability',value = percent_affordable_owner)
+with col8:
+    st.metric(label = 'Percent of total amount of Rental Affordability',value = percent_affordable_rental)
 
 locality_submittedOwner['Affordable Units'] = round(locality_submittedOwner['Percent of Units Affordable'] * locality_submittedOwner['Available Units'])
 locality_submittedRenter['Affordable Units'] = round(locality_submittedRenter['Percent of Units Affordable'] * locality_submittedRenter['Available Units'])
 
-st.write(locality_submittedRenter)
-st.write(locality_submittedOwner)
+#st.write(locality_submittedRenter)
+#st.write(locality_submittedOwner)
 LocalitySubmittedSum_Owner = sum(locality_submittedOwner['Affordable Units'])
 LocalitySubmittedSum_Rent = sum(locality_submittedRenter['Affordable Units'])
 result =  (LocalitySubmittedSum_Rent + LocalitySubmittedSum_Owner)
