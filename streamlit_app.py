@@ -1,232 +1,253 @@
-import streamlit as st 
-import pandas as pd 
-import numpy as np
-from re import findall
-st.set_page_config(layout="wide")
-st.title('Baseline App')
-datasets = st.container()
+import streamlit as st
+import pandas as pd
+
+st.set_page_config(layout="centered")
+st.title("Baseline App")
 
 acs_data_url = "./acs.csv"
 income_data_url = "./income_limits.csv"
 
+
 def load_data(data_url):
-    data = pd.read_csv(data_url,dtype = {'geoid':'object',
-                                            'geography_name':'object',
-                                            'title':'object',
-                                            'range_min':'float64',
-                                            'range_max':'float64',
-                                            'estimate':'float64',
-                                            'margin_of_error':'float64',
-                                            'proration_available_units':'float64'})
+    data = pd.read_csv(
+        data_url,
+        dtype={
+            "geoid": "object",
+            "geography_name": "object",
+            "title": "object",
+            "range_min": "float64",
+            "range_max": "float64",
+            "estimate": "float64",
+            "margin_of_error": "float64",
+            "proration_available_units": "float64",
+        },
+    )
     lowercase = lambda x: str(x).lower()
-    data.rename(lowercase, axis='columns',inplace=True)
+    data.rename(lowercase, axis="columns", inplace=True)
     return data
 
 
-with datasets:
-    acs_data = load_data(acs_data_url)
-    income_data = load_data(income_data_url)
+acs_data = load_data(acs_data_url)
+income_data = load_data(income_data_url)
 
-acs_data['geography_name'] = acs_data['geography_name'].astype(str)
+acs_data["geography_name"] = acs_data["geography_name"].astype(str)
 
-avail_counties = (acs_data.query('geography_name.str.contains("Unincorporated")')
-                            .query('not geoid == "0550000US08014"')
-                            .query('not geoid == "0550000US08031"')
-                            .loc[:, 'geography_name']
-                            .drop_duplicates()
-                            .dropna()
-                            .to_list())
+county_options = (
+    acs_data.query('geography_name.str.contains("Unincorporated")')
+    .query('not geoid == "0550000US08014"')
+    .query('not geoid == "0550000US08031"')
+    .loc[:, "geography_name"]
+    .drop_duplicates()
+    .dropna()
+    .to_list()
+)
 
-avail_munis = (acs_data.query('not geography_name.str.contains("Unincorporated")')
-                            .query('not geography_name == "nan"')
-                            .loc[:, 'geography_name']
-                            .drop_duplicates()
-                            .dropna()
-                            .to_list())
+municipality_options = (
+    acs_data.query('not geography_name.str.contains("Unincorporated")')
+    .query('not geography_name == "nan"')
+    .loc[:, "geography_name"]
+    .drop_duplicates()
+    .dropna()
+    .to_list()
+)
 
-avil_jurisdictions = dict(County = [''] + avail_counties,
-                          Municipality = [''] + avail_munis,
-                          space = '')
+jursidiction_options = dict(
+    County=[""] + county_options, Municipality=[""] + municipality_options, space=""
+)
 
-avail_names = income_data['il_name'].drop_duplicates().to_list()
+income_limit_name_options = income_data["il_name"].drop_duplicates().to_list()
 
-#Input widgets for sidebar
+# Input widgets for sidebar
 with st.sidebar:
-    with st.expander("Start here", expanded = True):
+    with st.expander("Start here", expanded=True):
 
-        juris_type_selection = st.radio('Select a jurisdiction type',['County','Municipality'], horizontal=True)
+        jurisdiction_type_selection = st.radio(
+            "Select a jurisdiction type", ["County", "Municipality"], horizontal=True
+        )
 
-        location = st.selectbox('Select a jurisdiction',avil_jurisdictions[juris_type_selection])
-        if location == '':
+        jurisdiction_name_selection = st.selectbox(
+            "Select a jurisdiction", jursidiction_options[jurisdiction_type_selection]
+        )
+        if jurisdiction_name_selection == "":
             st.stop()
 
-        geoid_location = (acs_data.query("geography_name == @location")
-                                .loc[:, 'geoid']
-                                .drop_duplicates()
-                                .to_list())
+        jurisdiction_geoid_selection = (
+            acs_data.query("geography_name == @jurisdiction_name_selection")
+            .loc[:, "geoid"]
+            .drop_duplicates()
+            .to_list()
+        )
 
+        income_limit_name_selection = st.selectbox(
+            "Income Limit Type", income_limit_name_options, index=1
+        )
 
-        name = st.selectbox('Income Limit Type',avail_names, index=1)
+        year_options = (
+            income_data.query("geoid == @jurisdiction_geoid_selection")
+            .query("il_name == @income_limit_name_selection")
+            .loc[:, "il_year"]
+            .drop_duplicates()
+            .sort_values(ascending=False)
+            .to_list()
+        )
+        year_selection = st.selectbox("Income Limit Year", year_options)
 
-        avail_years = (income_data.query("geoid == @geoid_location")
-                                .query("il_name == @name")
-                                .loc[:, 'il_year']
-                                .drop_duplicates()
-                                .sort_values(ascending = False)
-                                .to_list())
-        ILY = st.selectbox('Income Limit Year',avail_years)
-
-        if name == '' or ILY == '':
+        if income_limit_name_selection == "" or year_selection == "":
             st.stop()
-        
-        avail_adjacency = (income_data.query("geoid == @geoid_location")
-                                .query("il_name == @name")
-                                .loc[:, 'il_type']
-                                .drop_duplicates()
-                                .to_list())
-        
-        if name == 'State Median Income':
-            adjacency = 'State Median Income'
-            
+
+        adjacency_options = (
+            income_data.query("geoid == @jurisdiction_geoid_selection")
+            .query("il_name == @income_limit_name_selection")
+            .loc[:, "il_type"]
+            .drop_duplicates()
+            .to_list()
+        )
+
+        if income_limit_name_selection == "State Median Income":
+            adjacency_selection = "State Median Income"
+
         else:
-            adjacency = st.selectbox('Select Income Limit',avail_adjacency)
+            adjacency_selection = st.selectbox("Select Income Limit", adjacency_options)
 
-        if name == 'Area Median Income':
-            HH_size = st.slider('Household Size',1,8,3)
-        else: 
-            HH_size = 0
+        if income_limit_name_selection == "Area Median Income":
+            household_size_selection = st.slider("Household Size", 1, 8, 3)
+        else:
+            household_size_selection = 0
 
+        median_income_selection = (
+            income_data.query("geoid == @jurisdiction_geoid_selection")
+            .query("il_name == @income_limit_name_selection")
+            .query("il_type == @adjacency_selection")
+            .query("il_hh_size== @household_size_selection")
+            .query("il_year == @year_selection")
+            .loc[:, "income_limit"]
+            .to_list()[0]
+        )
 
+        st.metric(label="Selected Median income", value=f"${median_income_selection:,}")
 
-        median_income = (income_data.query("geoid == @geoid_location")
-                    .query("il_name == @name")
-                    .query("il_type == @adjacency")
-                    .query("il_hh_size == @HH_size")
-                    .query('il_year == @ILY')
-                    .loc[:, 'income_limit']
-                    .to_list()[0])
-        calculate_button = st.button('Calculate Median Income')
-
-    
-        st.metric(label = 'Selected Median income',value = f"${median_income:,}")
-
-    with st.expander('Optional variables', expanded = True):
-        SaleUnitAvailabilityRateDefault = (acs_data.query("geoid == @geoid_location")
-                                                .query('title == "VALUE"')
-                                                .loc[:, 'proration_available_units']
-                                                .drop_duplicates()
-                                                .to_list())
-        SaleUnitAvailabilityRate = st.slider('Sale unit Availability Rate',0.0,1.0,SaleUnitAvailabilityRateDefault,.01)
-        SaleUnitAvailabilityRateDefault = (acs_data.query("geoid == @geoid_location")
-                                                .query('title == "GROSS RENT"')
-                                                .loc[:, 'proration_available_units']
-                                                .drop_duplicates()
-                                                .to_list())
-        RentalUnitAvailabilityRate = st.slider('Rental Unit Availability Rate',0.0,1.0,SaleUnitAvailabilityRateDefault,.01)
-        HVtoIncome_slider = st.slider('Home Value to Income Ratio',2.5,4.5,3.5,.01)
-
-
-
-
-
-
-
-
-
-renter_income_limit = round(median_income * .6)
-
-owner_income_limit = median_income
-
-max_affordable_rent = round((renter_income_limit/12)*.3)
-max_affordable_price = round(owner_income_limit * HVtoIncome_slider)
-
-
-
-col3, col4 = st.columns((1,1))
-with col3:
-    st.metric(label = 'Homeowner/Homebuyer Income Limit',
-              value = f"${owner_income_limit:,}",
-              help='Your selected Median Income of 'f"${median_income:,}" + ' x 1.0')
-
-with col4:    
-    st.metric(label = 'Renter Income Limit',
-              value = f"${renter_income_limit:,}",
-              help='Your selected Median Income of 'f"${median_income:,}" + ' x 0.6')
-
-col5, col6 = st.columns((1,1))
-with col5:
-    st.metric(label = 'Max Affordable For-Sale Price',
-              value = f"${max_affordable_price:,}",
-              help = 'Homeowner/Homebuyer Income Limit of ' + f"${owner_income_limit:,}" + ' x ' + f"{HVtoIncome_slider:}")
-    
-with col6:
-    st.metric(label = 'Max Affordable Rent',
-              value = f"${max_affordable_rent:,}",
-              help = 'Renter Income Limit of (' + f"${renter_income_limit:,}" + '/12) x 0.3')
-    
+    with st.expander("Optional variables", expanded=True):
+        ownership_unit_availability_rate_default = (
+            acs_data.query("geoid == @jurisdiction_geoid_selection")
+            .query('title == "VALUE"')
+            .loc[:, "proration_available_units"]
+            .drop_duplicates()
+            .to_list()
+        )
+        sale_unit_availibility_rate_selection = st.slider(
+            "Sale unit Availability Rate",
+            0.0,
+            1.0,
+            ownership_unit_availability_rate_default,
+            0.01,
+        )
+        rental_unit_availability_rate_default = (
+            acs_data.query("geoid == @jurisdiction_geoid_selection")
+            .query('title == "GROSS RENT"')
+            .loc[:, "proration_available_units"]
+            .drop_duplicates()
+            .to_list()
+        )
+        rental_unit_availibility_rate_selection = st.slider(
+            "Rental Unit Availability Rate",
+            0.0,
+            1.0,
+            ownership_unit_availability_rate_default,
+            0.01,
+        )
+        home_value_to_income_ratio_selection = st.slider(
+            "Home Value to Income Ratio", 2.5, 4.5, 3.5, 0.01
+        )
 
 
-acs_data['range_max'] = acs_data['range_max'].astype(float)
-locality_submitted = acs_data[acs_data['geoid'] == geoid_location[0]]
-locality_submittedIncome = income_data[income_data['geoid'] == geoid_location[0]]
-Income_dataYear = locality_submittedIncome[locality_submittedIncome['il_year'] == ILY]
-Income_dataIL_type = Income_dataYear[Income_dataYear['il_type'].str.contains(adjacency)]
-Income_data_hhsize = Income_dataIL_type[Income_dataIL_type['il_hh_size'] == HH_size]
-
-locality_submittedOwner = (acs_data
-                            .query('geoid == @geoid_location')
-                            .query('title == "VALUE"')
-                            .loc[:, ['range_min','range_max','estimate']])
-
-locality_submittedRenter = (acs_data
-                            .query('geoid == @geoid_location')
-                            .query('title == "GROSS RENT"')
-                            .loc[:, ['range_min','range_max','estimate']])
+renter_income_limit = round(median_income_selection * 0.6)
+owner_income_limit = median_income_selection
+max_affordable_rent = round((renter_income_limit / 12) * 0.3)
+max_affordable_price = round(owner_income_limit * home_value_to_income_ratio_selection)
 
 
+owner_results = (
+    acs_data.query("geoid == @jurisdiction_geoid_selection")
+    .query('title == "VALUE"')
+    .loc[:, ["range_min", "range_max", "estimate"]]
+)
 
-locality_submittedOwner['Available Units'] = round(locality_submittedOwner['estimate'] * SaleUnitAvailabilityRate)
-locality_submittedRenter['Available Units'] = round(locality_submittedRenter['estimate'] * RentalUnitAvailabilityRate)
+renter_results = (
+    acs_data.query("geoid == @jurisdiction_geoid_selection")
+    .query('title == "GROSS RENT"')
+    .loc[:, ["range_min", "range_max", "estimate"]]
+)
 
-##these newly created columns still need to be populated
-##the percent of units that are affordable should be calculated by comparing the
-##range_min and range_max to either max_affordable_rent or max_affordable_price to
-##this is already set up to feed into Affordable Units once it is populated
 
-#800 rental side, 200,000 ownership bucket 
-locality_submittedOwner['Percent of Units Affordable'] = 0
-for idx, rows in locality_submittedOwner.iterrows():
-    if rows['range_max'] <= max_affordable_price:
-        locality_submittedOwner.at[idx,'Percent of Units Affordable'] = 1
-    elif rows['range_min'] <= max_affordable_price and rows['range_max'] >= max_affordable_price:
-        locality_submittedOwner.at[idx,'Percent of Units Affordable'] = max_affordable_price / rows['range_max']
+owner_results["Available Units"] = round(
+    owner_results["estimate"] * sale_unit_availibility_rate_selection
+)
+renter_results["Available Units"] = round(
+    renter_results["estimate"] * rental_unit_availibility_rate_selection
+)
+
+# 800 rental side, 200,000 ownership bucket
+owner_results["Percent of Units Affordable"] = 0
+for idx, rows in owner_results.iterrows():
+    if rows["range_max"] <= max_affordable_price:
+        owner_results.at[idx, "Percent of Units Affordable"] = 1
+    elif (
+        rows["range_min"] <= max_affordable_price
+        and rows["range_max"] >= max_affordable_price
+    ):
+        owner_results.at[idx, "Percent of Units Affordable"] = (
+            max_affordable_price / rows["range_max"]
+        )
     else:
-        locality_submittedOwner.at[idx,'Percent of Units Affordable'] = 0
+        owner_results.at[idx, "Percent of Units Affordable"] = 0
 
-locality_submittedRenter['Percent of Units Affordable'] = 0
-for idx, rows in locality_submittedRenter.iterrows():
-    if rows['range_max'] <= max_affordable_rent:
-        locality_submittedRenter.at[idx,'Percent of Units Affordable'] = 1
-    elif rows['range_min'] <= max_affordable_rent and rows['range_max'] >= max_affordable_rent:
-        locality_submittedRenter.at[idx,'Percent of Units Affordable'] = max_affordable_rent / rows['range_max']
+renter_results["Percent of Units Affordable"] = 0
+for idx, rows in renter_results.iterrows():
+    if rows["range_max"] <= max_affordable_rent:
+        renter_results.at[idx, "Percent of Units Affordable"] = 1
+    elif (
+        rows["range_min"] <= max_affordable_rent
+        and rows["range_max"] >= max_affordable_rent
+    ):
+        renter_results.at[idx, "Percent of Units Affordable"] = (
+            max_affordable_rent / rows["range_max"]
+        )
     else:
-        locality_submittedRenter.at[idx,'Percent of Units Affordable'] = 0
-        
-percent_affordable_owner = sum(locality_submittedOwner['Available Units'][locality_submittedOwner['range_max'] <= max_affordable_price]) / sum(locality_submittedOwner['estimate'])
-percent_affordable_rental = sum(locality_submittedRenter['Available Units'][locality_submittedRenter['range_max'] <= max_affordable_rent]) / sum(locality_submittedRenter['estimate'])
+        renter_results.at[idx, "Percent of Units Affordable"] = 0
 
-col7, col8 = st.columns((1,1))
-with col7:
-    st.metric(label = 'Percent Ownership Stock Included in Baseline',value = f"{percent_affordable_owner:.1%}")
-with col8:
-    st.metric(label = 'Percent of Rental Stock Included in Baseline',value = f"{percent_affordable_rental:.1%}" )
+owner_percent_affordable = sum(
+    owner_results["Available Units"][owner_results["range_max"] <= max_affordable_price]
+) / sum(owner_results["estimate"])
+renter_percent_affordable = sum(
+    renter_results["Available Units"][
+        renter_results["range_max"] <= max_affordable_rent
+    ]
+) / sum(renter_results["estimate"])
 
-locality_submittedOwner['Affordable Units'] = round(locality_submittedOwner['Percent of Units Affordable'] * locality_submittedOwner['Available Units'])
-locality_submittedRenter['Affordable Units'] = round(locality_submittedRenter['Percent of Units Affordable'] * locality_submittedRenter['Available Units'])
-locality_submittedOwner['Range'] = locality_submittedOwner['range_min'].map('${:,.0f}'.format) + '  to ' + locality_submittedOwner['range_max'].map('${:,.0f}'.format)
-locality_submittedRenter['Range'] = locality_submittedRenter['range_min'].map('${:,.0f}'.format) + '  to ' + locality_submittedRenter['range_max'].map('${:,.0f}'.format)
-locality_submittedOwner['Occupied Units'] = locality_submittedOwner['estimate']
-locality_submittedRenter['Occupied Units'] = locality_submittedRenter['estimate']
+owner_results["Affordable Units"] = round(
+    owner_results["Percent of Units Affordable"] * owner_results["Available Units"]
+)
+renter_results["Affordable Units"] = round(
+    renter_results["Percent of Units Affordable"] * renter_results["Available Units"]
+)
+owner_results["Range"] = (
+    owner_results["range_min"].map("${:,.0f}".format)
+    + "  to "
+    + owner_results["range_max"].map("${:,.0f}".format)
+)
+renter_results["Range"] = (
+    renter_results["range_min"].map("${:,.0f}".format)
+    + "  to "
+    + renter_results["range_max"].map("${:,.0f}".format)
+)
+owner_results["Occupied Units"] = owner_results["estimate"]
+renter_results["Occupied Units"] = renter_results["estimate"]
+
+owner_total_affordable_units = sum(owner_results["Affordable Units"])
+renter_total_affordable_units = sum(renter_results["Affordable Units"])
+total_affordable_units = round(
+    renter_total_affordable_units + owner_total_affordable_units
+)
 
 # CSS to inject contained in a string
 hide_table_row_index = """
@@ -239,15 +260,90 @@ hide_table_row_index = """
 # Inject CSS with Markdown
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
 
-col10, col11 = st.columns((1,1))
+with st.container():
 
-with col10:
-    st.table(locality_submittedOwner[['Range', 'Occupied Units', 'Available Units', 'Affordable Units']])
-with col11:
-    st.table(locality_submittedRenter[['Range', 'Occupied Units', 'Available Units', 'Affordable Units']])
-LocalitySubmittedSum_Owner = sum(locality_submittedOwner['Affordable Units'])
-LocalitySubmittedSum_Rent = sum(locality_submittedRenter['Affordable Units'])
-result =  round(LocalitySubmittedSum_Rent + LocalitySubmittedSum_Owner)
-st.metric(label = 'Baseline Estimate', value = f'{result:,}' )
+    st.subheader('Baseline and Goal Results')
 
-st.latex(r'\frac{'+f"{renter_income_limit:}" + r'}{12_{months}}\times .3')
+    col1a,col1b,col1c = st.columns(3, gap="large")
+    with col1a:
+        st.metric(label="Baseline Estimate", value=f"{total_affordable_units:,}")
+        
+    with col1b:
+        st.metric(label="Annual Goal", value=f"{round(total_affordable_units*0.03):,}")
+
+    with col1c:
+        st.metric(label="Three Year Cycle Goal", value=f"{round(total_affordable_units*0.09):,}")
+
+with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
+    st.write(
+        "These income limits have been calculated based on your selections in the sidebar:"
+    )
+    col3, col4 = st.columns(2, gap="large")
+    with col3:
+        st.metric(
+            label="Homeowner/Homebuyer Income Limit",
+            value=f"${owner_income_limit:,}",
+            help="Your selected Median Income of "
+            f"${median_income_selection:,}" + " x 1.0",
+        )
+
+    with col4:
+        st.metric(
+            label="Renter Income Limit",
+            value=f"${renter_income_limit:,}",
+            help="Your selected Median Income of "
+            f"${median_income_selection:,}" + " x 0.6",
+        )
+    st.write(
+        "---"
+    )
+    st.write(
+        "These Max Affordable For-Sale Prices and Rental Rates are calculated based on the income limits above:"
+    )
+    col5, col6 = st.columns(2, gap="large")
+    with col5:
+        st.metric(
+            label="Max Affordable For-Sale Price",
+            value=f"${max_affordable_price:,}",
+            help="Homeowner/Homebuyer Income Limit of "
+            + f"${owner_income_limit:,}"
+            + " x "
+            + f"{home_value_to_income_ratio_selection:}",
+        )
+
+    with col6:
+        st.metric(
+            label="Max Affordable Rent",
+            value=f"${max_affordable_rent:,}",
+            help="Renter Income Limit of ("
+            + f"${renter_income_limit:,}"
+            + "/12) x 0.3",
+        )
+
+with st.expander("Housing Affordability by Range"):
+    col10, col11 = st.columns(2)
+    with col10:
+        st.table(
+            owner_results[
+                ["Range", "Occupied Units", "Available Units", "Affordable Units"]
+            ]
+        )
+    with col11:
+        st.table(
+            renter_results[
+                ["Range", "Occupied Units", "Available Units", "Affordable Units"]
+            ]
+        )
+
+col7, col8 = st.columns((1, 1))
+with col7:
+    st.metric(
+        label="Percent of Ownership Stock Included in Baseline",
+        value=f"{owner_percent_affordable:.1%}",
+    )
+with col8:
+    st.metric(
+        label="Percent of Rental Stock Included in Baseline",
+        value=f"{renter_percent_affordable:.1%}",
+    )
+
