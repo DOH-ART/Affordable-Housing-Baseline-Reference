@@ -125,20 +125,20 @@ income_limits_hud <- unique(pull(locality_adjacency,county_neighbor)) %>%
     county_ami_df(county_geoids = .)
 
 amis_adjacency <- locality_adjacency %>%
-    rowwise() %>%
     mutate(county_name = str_remove(county_name, ', CO')) %>% 
     left_join(income_limits_hud, by = c('county_neighbor'='geoid'),multiple = "all") %>%
-    group_by(geoid,il_name, county,county_name, income_limit,il_year, il_hh_size) %>%
+    mutate(income_limit_text = as.character(income_limit)) %>%
+    group_by(geoid,county,il_name,il_year,il_hh_size,income_limit) %>%
     summarise(county_concat = str_c(county_name, collapse = ', '),
-              county_neighbor_concat = str_c(county_neighbor, collapse = ', ')) %>% 
+              county_id_concat = str_c(county_neighbor, collapse = ' ')) %>%
     ungroup() %>% 
     rowwise() %>% 
-    mutate(il_type = if_else(county == county_neighbor_concat,
-                             paste0('Own AMI - ', county_name),
-        paste0('Neighboring AMI - ', str_c(county_name, sep = ', ')))) %>%
+    mutate(il_type = if_else(str_detect(county_id_concat,county),
+                             paste0('Own AMI - ', county_concat),
+        paste0('Neighboring AMI - ', str_c(county_concat, sep = ', ')))) %>%
     ungroup() %>%
     select(geoid, il_name, il_year,il_hh_size, il_type, income_limit) %>%
-    distinct(pick(everything()))
+    distinct()
 
 state_median_income <- map_dfr(c(2017:2019,2021),
                            ~tidycensus::get_acs(geography = 'state',
