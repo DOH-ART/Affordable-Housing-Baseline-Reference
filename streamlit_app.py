@@ -57,16 +57,6 @@ jursidiction_options = dict(
 
 income_limit_name_options = income_data["il_name"].drop_duplicates().to_list()
 
-query_params_in = st.experimental_get_query_params()
-
-
-#jurisdiction_geoid_selection = query_params_in['geoid'][0]
-#income_limit_name_selection = query_params_in['type'][0]
-#adjacency_selection = query_params_in['name'][0] 
-#year_selection = query_params_in['year'][0] 
-#household_size_selection = query_params_in['household_size'][0]
-#median_income_selection = float(query_params_in['median_income'][0])
-
 # Input widgets for sidebar
 with st.sidebar:
     with st.expander("Start here", expanded=True):
@@ -123,7 +113,7 @@ with st.sidebar:
             household_size_selection = st.slider("Household Size", 1, 8, 3)
         else:
             household_size_selection = 0
-        
+
         median_income_selection = (
             income_data.query("geoid == @jurisdiction_geoid_selection")
             .query("il_name == @income_limit_name_selection")
@@ -135,7 +125,6 @@ with st.sidebar:
         )
 
         st.metric(label="Selected Median income", value=f"${median_income_selection:,}")
-
 
     with st.expander("Optional variables", expanded=True):
         ownership_unit_availability_rate_default = (
@@ -270,19 +259,6 @@ hide_table_row_index = """
 
 # Inject CSS with Markdown
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
-
-query_params = dict(geoid = jurisdiction_geoid_selection,
-                    type = income_limit_name_selection,
-                    name = adjacency_selection,
-                    year = year_selection,
-                    household_size = household_size_selection)
-
-st.experimental_set_query_params(geoid = jurisdiction_geoid_selection,
-                                type = income_limit_name_selection,
-                                name = adjacency_selection,
-                                year = year_selection,
-                                household_size = household_size_selection,
-                                median_income = median_income_selection)
 
 with st.container():
 
