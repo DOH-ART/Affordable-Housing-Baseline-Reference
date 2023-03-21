@@ -56,6 +56,7 @@ jursidiction_options = dict(
 )
 
 income_limit_name_options = income_data["il_name"].drop_duplicates().to_list()
+income_limit_name_options.insert(0,"")
 
 # Input widgets for sidebar
 with st.sidebar:
@@ -79,8 +80,11 @@ with st.sidebar:
         )
 
         income_limit_name_selection = st.selectbox(
-            "Income Limit Type", income_limit_name_options, index=1
+            "Income Limit Type", income_limit_name_options, index = 0
         )
+
+        if income_limit_name_selection == '':
+            st.stop()
 
         year_options = (
             income_data.query("geoid == @jurisdiction_geoid_selection")
@@ -90,7 +94,10 @@ with st.sidebar:
             .sort_values(ascending=False)
             .to_list()
         )
-        year_selection = st.selectbox("Income Limit Year", year_options)
+
+        year_options.insert(0,"")
+
+        year_selection = st.selectbox("Income Limit Year", year_options,index=0)
 
         if income_limit_name_selection == "" or year_selection == "":
             st.stop()
@@ -159,6 +166,20 @@ with st.sidebar:
             "Home Value to Income Ratio", 2.5, 4.5, 3.5, 0.01
         )
 
+st.markdown(
+"""
+<style>
+[data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
+width: 500px;
+}
+[data-testid="stExpander"][aria-expanded="true"] > div:first-child {
+width: 500px;
+margin-left: -500px;
+}
+</style>
+""",
+unsafe_allow_html=True
+)
 
 renter_income_limit = round(median_income_selection * 0.6)
 owner_income_limit = median_income_selection
@@ -347,3 +368,6 @@ with col8:
         value=f"{renter_percent_affordable:.1%}",
     )
 
+Downloadable_file = owner_results[["Range", "Occupied Units", "Available Units", "Affordable Units"]].append(renter_results[["Range", "Occupied Units", "Available Units", "Affordable Units"]])
+
+st.download_button('Download Your Baseline Results',Downloadable_file.to_csv())
