@@ -127,6 +127,7 @@ with st.sidebar:
         else:
             household_size_selection = 0
 
+
         median_income_selection = (
             income_data.query("geoid == @jurisdiction_geoid_selection")
             .query("il_name == @income_limit_name_selection")
@@ -136,8 +137,9 @@ with st.sidebar:
             .loc[:, "income_limit"]
             .to_list()[0]
         )
-
         st.metric(label="Selected Median income", value=f"${median_income_selection:,}")
+
+        
 
     with st.expander("Optional variables", expanded=True):
         ownership_unit_availability_rate_default = (
@@ -376,6 +378,7 @@ with col8:
         label="Percent of Rental Stock Included in Baseline",
         value=f"{renter_percent_affordable:.1%}",
     )
+st.experimental_get_query_params()
 
 Downloadable_file = owner_results[["Range", "Occupied Units", "Available Units", "Affordable Units"]].append(renter_results[["Range", "Occupied Units", "Available Units", "Affordable Units"]])
 
