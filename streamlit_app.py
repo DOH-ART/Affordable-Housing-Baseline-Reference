@@ -4,6 +4,8 @@ import pandas as pd
 st.set_page_config(layout="centered")
 st.title("Baseline App")
 
+"st.session_state values:", st.session_state
+
 acs_data_url = "./acs.csv"
 income_data_url = "./income_limits.csv"
 
@@ -63,12 +65,15 @@ with st.sidebar:
     with st.expander("Start here", expanded=True):
 
         jurisdiction_type_selection = st.radio(
-            "Select a jurisdiction type", ["County", "Municipality"], horizontal=True
+            "Select a jurisdiction type", ["County", "Municipality"], horizontal=True,
+            key = 'Select a jurisdiction type'
         )
 
         jurisdiction_name_selection = st.selectbox(
-            "Select a jurisdiction", jursidiction_options[jurisdiction_type_selection]
+            "Select a jurisdiction", jursidiction_options[jurisdiction_type_selection],
+            key = 'Select a jurisdiction'
         )
+        
         if jurisdiction_name_selection == "":
             st.stop()
 
@@ -80,7 +85,8 @@ with st.sidebar:
         )
 
         income_limit_name_selection = st.selectbox(
-            "Income Limit Type", income_limit_name_options, index = 0
+            "Income Limit Type", income_limit_name_options, index = 0,
+            key = 'Income Limit Type'
         )
 
         if income_limit_name_selection == '':
@@ -97,7 +103,7 @@ with st.sidebar:
 
         year_options.insert(0,"")
 
-        year_selection = st.selectbox("Income Limit Year", year_options,index=0)
+        year_selection = st.selectbox("Income Limit Year", year_options,index=0,key = 'Income Limit year')
 
         if income_limit_name_selection == "" or year_selection == "":
             st.stop()
@@ -114,10 +120,10 @@ with st.sidebar:
             adjacency_selection = "State Median Income"
 
         else:
-            adjacency_selection = st.selectbox("Select Income Limit", adjacency_options)
+            adjacency_selection = st.selectbox("Select Income Limit", adjacency_options, key = 'Select Income Limit')
 
         if income_limit_name_selection == "Area Median Income":
-            household_size_selection = st.slider("Household Size", 1, 8, 3)
+            household_size_selection = st.slider("Household Size", 1, 8, 3, key = 'Household Size')
         else:
             household_size_selection = 0
 
@@ -147,6 +153,7 @@ with st.sidebar:
             1.0,
             ownership_unit_availability_rate_default,
             0.01,
+            key = 'Sale unit Availability Rate'
         )
         rental_unit_availability_rate_default = (
             acs_data.query("geoid == @jurisdiction_geoid_selection")
@@ -161,9 +168,11 @@ with st.sidebar:
             1.0,
             ownership_unit_availability_rate_default,
             0.01,
+            key = 'Rental Unit Availability Rate'
         )
         home_value_to_income_ratio_selection = st.slider(
-            "Home Value to Income Ratio", 2.5, 4.5, 3.5, 0.01
+            "Home Value to Income Ratio", 2.5, 4.5, 3.5, 0.01,
+            key = 'Home Value to Income Ratio'
         )
 
 st.markdown(
