@@ -116,28 +116,34 @@ with st.sidebar:
             .to_list()
         )
 
+        adjacency_options.insert(0,'')
+
         if income_limit_name_selection == "State Median Income":
             adjacency_selection = "State Median Income"
 
         else:
             adjacency_selection = st.selectbox("Select Income Limit", adjacency_options, key = 'Select Income Limit')
 
+
+
         if income_limit_name_selection == "Area Median Income":
             household_size_selection = st.slider("Household Size", 1, 8, 3, key = 'Household Size')
         else:
             household_size_selection = 0
 
-
+        if adjacency_selection == '':
+            st.stop()
+        
         median_income_selection = (
-            income_data.query("geoid == @jurisdiction_geoid_selection")
-            .query("il_name == @income_limit_name_selection")
-            .query("il_type == @adjacency_selection")
-            .query("il_hh_size== @household_size_selection")
-            .query("il_year == @year_selection")
-            .loc[:, "income_limit"]
-            .to_list()[0]
-        )
-        st.metric(label="Selected Median income", value=f"${median_income_selection:,}")
+                income_data.query("geoid == @jurisdiction_geoid_selection")
+                .query("il_name == @income_limit_name_selection")
+                .query("il_type == @adjacency_selection")
+                .query("il_hh_size== @household_size_selection")
+                .query("il_year == @year_selection")
+                .loc[:, "income_limit"]
+                .to_list()
+            )
+        st.metric(label="Selected Median income", value=f"${median_income_selection[0]:,}")
 
         
 
@@ -192,8 +198,8 @@ margin-left: -500px;
 unsafe_allow_html=True
 )
 
-renter_income_limit = round(median_income_selection * 0.6)
-owner_income_limit = median_income_selection
+renter_income_limit = round(median_income_selection[0] * 0.6)
+owner_income_limit = median_income_selection[0]
 max_affordable_rent = round((renter_income_limit / 12) * 0.3)
 max_affordable_price = round(owner_income_limit * home_value_to_income_ratio_selection)
 
@@ -204,11 +210,19 @@ owner_results = (
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
 
+owner_results['range_max'][owner_results['range_max'] < 200000] = 199999
+owner_results['range_min'][owner_results['range_max'] < 200000] = 0
+owner_results = pd.pivot_table(owner_results, values = 'estimate', index = ['range_max','range_min'], aggfunc=sum).reset_index()
+
 renter_results = (
     acs_data.query("geoid == @jurisdiction_geoid_selection")
     .query('title == "GROSS RENT"')
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
+
+renter_results['range_max'][renter_results['range_max'] < 800] = 799
+renter_results['range_min'][renter_results['range_max'] < 800] = 0
+renter_results = pd.pivot_table(renter_results, values = 'estimate', index = ['range_max','range_min'], aggfunc=sum).reset_index()
 
 
 owner_results["Available Units"] = round(
@@ -219,6 +233,7 @@ renter_results["Available Units"] = round(
 )
 
 # 800 rental side, 200,000 ownership bucket
+
 owner_results["Percent of Units Affordable"] = 0
 for idx, rows in owner_results.iterrows():
     if rows["range_max"] <= max_affordable_price:
@@ -247,6 +262,7 @@ for idx, rows in renter_results.iterrows():
     else:
         renter_results.at[idx, "Percent of Units Affordable"] = 0
 
+
 owner_percent_affordable = sum(
     owner_results["Available Units"][owner_results["range_max"] <= max_affordable_price]
 ) / sum(owner_results["estimate"])
@@ -262,6 +278,8 @@ owner_results["Affordable Units"] = round(
 renter_results["Affordable Units"] = round(
     renter_results["Percent of Units Affordable"] * renter_results["Available Units"]
 )
+
+
 owner_results["Range"] = (
     owner_results["range_min"].map("${:,.0f}".format)
     + "  to "
@@ -316,7 +334,7 @@ with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
             label="Homeowner/Homebuyer Income Limit",
             value=f"${owner_income_limit:,}",
             help="Your selected Median Income of "
-            f"${median_income_selection:,}" + " x 1.0",
+            f"${median_income_selection[0]:,}" + " x 1.0",
         )
 
     with col4:
@@ -324,7 +342,7 @@ with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
             label="Renter Income Limit",
             value=f"${renter_income_limit:,}",
             help="Your selected Median Income of "
-            f"${median_income_selection:,}" + " x 0.6",
+            f"${median_income_selection[0]:,}" + " x 0.6",
         )
     st.write(
         "---"
