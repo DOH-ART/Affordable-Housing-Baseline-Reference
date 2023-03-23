@@ -3,8 +3,8 @@ import pandas as pd
 
 st.set_page_config(layout="centered")
 st.title("Baseline App")
-
-"st.session_state values:", st.session_state
+st.write('Fill out the select boxes to the left and your results will be posted here')
+#"st.session_state values:", st.session_state
 
 acs_data_url = "./acs.csv"
 income_data_url = "./income_limits.csv"
@@ -63,15 +63,15 @@ income_limit_name_options.insert(0,"")
 # Input widgets for sidebar
 with st.sidebar:
     with st.expander("Start here", expanded=True):
-
+        st.write('Step 1: Pick whether you wish to report on a County or Municipality')
         jurisdiction_type_selection = st.radio(
             "Select a jurisdiction type", ["County", "Municipality"], horizontal=True,
             key = 'Select a jurisdiction type'
         )
-
+        st.write('Step 2: Pick which locality you are located in')
         jurisdiction_name_selection = st.selectbox(
             "Select a jurisdiction", jursidiction_options[jurisdiction_type_selection],
-            key = 'Select a jurisdiction'
+            key = 'Select a jurisdiction', help = 'If your specific locality is not found try changing your jurisdiction type.'
         )
         
         if jurisdiction_name_selection == "":
@@ -84,9 +84,10 @@ with st.sidebar:
             .to_list()
         )
 
+        st.write('Step 3: Income limit type has three unique options each with different variables associated with them')
         income_limit_name_selection = st.selectbox(
             "Income Limit Type", income_limit_name_options, index = 0,
-            key = 'Income Limit Type'
+            key = 'Income Limit Type', help = 'Area Median Income allows you to pick your preferred household size and adjacent county Income Limits, Median Family Income allows you to only pick adjacent Income Limits, and State Median Income allows you only to pick the year in which that median income existed.'
         )
 
         if income_limit_name_selection == '':
@@ -103,6 +104,7 @@ with st.sidebar:
 
         year_options.insert(0,"")
 
+        st.write('Step 4: pick which year you would like your income limit to report from')
         year_selection = st.selectbox("Income Limit Year", year_options,index=0,key = 'Income Limit year')
 
         if income_limit_name_selection == "" or year_selection == "":
@@ -118,10 +120,12 @@ with st.sidebar:
 
         adjacency_options.insert(0,'')
 
+        
         if income_limit_name_selection == "State Median Income":
             adjacency_selection = "State Median Income"
 
         else:
+            st.write('Step 5: Select where you want your Income Limit is reporting from')
             adjacency_selection = st.selectbox("Select Income Limit", adjacency_options, key = 'Select Income Limit')
 
 
@@ -143,6 +147,7 @@ with st.sidebar:
                 .loc[:, "income_limit"]
                 .to_list()
             )
+        st.write('This number is affected from the options you chose from above')
         st.metric(label="Selected Median income", value=f"${median_income_selection[0]:,}")
 
         
@@ -407,4 +412,4 @@ st.experimental_get_query_params()
 
 Downloadable_file = owner_results[["Range", "Occupied Units", "Available Units", "Affordable Units"]].append(renter_results[["Range", "Occupied Units", "Available Units", "Affordable Units"]])
 
-st.download_button('Download Your Baseline Results',Downloadable_file.to_csv())
+st.download_button('Download Your Baseline Results',Downloadable_file.to_csv(), file_name = 'BaselineReults.csv')
