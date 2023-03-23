@@ -369,6 +369,13 @@ with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
             + f"${renter_income_limit:,}"
             + "/12) x 0.3",
         )
+owner_results['Occupied Units'] = owner_results['Occupied Units'].astype(int)
+owner_results['Available Units'] = owner_results['Available Units'].astype(int)
+owner_results['Affordable Units'] = owner_results['Affordable Units'].astype(int)
+
+renter_results['Occupied Units'] = renter_results['Occupied Units'].astype(int)
+renter_results['Available Units'] = renter_results['Available Units'].astype(int)
+renter_results['Affordable Units'] = renter_results['Affordable Units'].astype(int)
 
 with st.expander("Housing Affordability by Range"):
     col10, col11 = st.columns(2)
