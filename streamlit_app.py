@@ -137,10 +137,11 @@ with st.sidebar:
             except KeyError:
                 st.stop()
 
+            st.write(st.session_state['jurisdiction_name'])
+            
+
             st.session_state["geoid"] = (
-                acs_data.query(
-                    "geography_name == @st.session_state['jurisdiction_name']"
-                )
+                acs_data[acs_data['geography_name'] == st.session_state['jurisdiction_name']]
                 .loc[:, "geoid"]
                 .drop_duplicates()
                 .to_list()
@@ -164,8 +165,8 @@ with st.sidebar:
                 st.stop()
 
             year_options = (
-                income_data.query("geoid == @st.session_state['geoid']")
-                .query("il_name == @st.session_state['income_limit_type']")
+                income_data[(income_data['geoid'] == st.session_state['geoid']) & 
+                            (income_data['il_name'] == st.session_state['income_limit_type'])]
                 .loc[:, "il_year"]
                 .drop_duplicates()
                 .sort_values(ascending=False)
@@ -193,8 +194,8 @@ with st.sidebar:
                 st.stop()
 
             adjacency_options = (
-                income_data.query("geoid == @st.session_state['geoid']")
-                .query("il_name == @st.session_state['income_limit_type']")
+                income_data[(income_data['geoid'] == st.session_state['geoid']) & 
+                            (income_data['il_name'] == st.session_state['income_limit_type'])]
                 .loc[:, "il_type"]
                 .drop_duplicates()
                 .to_list()
@@ -247,12 +248,11 @@ with st.sidebar:
             ):
                 st.stop()
 
-            median_income_selection = (
-                income_data.query("geoid == @st.session_state['geoid']")
-                .query("il_name == @st.session_state['income_limit_type']")
-                .query("il_type == @st.session_state['income_limit']")
-                .query("il_hh_size== @st.session_state['hh_size']")
-                .query("il_year == @st.session_state['year']")
+            median_income_selection = (income_data[(income_data['geoid'] == st.session_state['geoid']) &
+                                                   (income_data['il_name'] == st.session_state['income_limit_type']) &
+                                                   (income_data['il_type'] == st.session_state['income_limit']) &
+                                                   (income_data['il_hh_size'] == st.session_state['hh_size']) &
+                                                   (income_data['il_year'] == st.session_state['year'])]
                 .loc[:, "income_limit"]
                 .to_list()
                 .pop()
@@ -263,8 +263,8 @@ with st.sidebar:
 
         with st.expander("Optional variables", expanded=False):
             ownership_unit_availability_rate_default = (
-                acs_data.query("geoid == @st.session_state['geoid']")
-                .query('title == "VALUE"')
+                acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
+                         (acs_data['title'] == "VALUE")]
                 .loc[:, "proration_available_units"]
                 .drop_duplicates()
                 .to_list()
@@ -284,8 +284,8 @@ with st.sidebar:
                 ] = ownership_unit_availability_rate_default
             st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
             rental_unit_availability_rate_default = (
-                acs_data.query("geoid == @st.session_state['geoid']")
-                .query('title == "GROSS RENT"')
+                acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
+                         (acs_data['title'] == 'GROSS RENT')]
                 .loc[:, "proration_available_units"]
                 .drop_duplicates()
                 .to_list()
@@ -326,8 +326,8 @@ max_affordable_price = round(
 
 
 owner_results = (
-    acs_data.query("geoid == @st.session_state['geoid']")
-    .query('title == "VALUE"')
+    acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
+             (acs_data['title'] == 'VALUE')]
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
 
@@ -338,8 +338,8 @@ owner_results = pd.pivot_table(
 ).reset_index()
 
 renter_results = (
-    acs_data.query("geoid == @st.session_state['geoid']")
-    .query('title == "GROSS RENT"')
+    acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
+             (acs_data['title'] == 'GROSS RENT')]
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
 
