@@ -91,6 +91,7 @@ def selection_callback(key):
     print(st.session_state)
     if len(st.session_state) > 0:
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        print(st.experimental_get_query_params())
         params_in = loads(st.experimental_get_query_params().get("query").pop())
         try:
             st.session_state[key] = params_in[key]
