@@ -93,8 +93,9 @@ def selection_callback(key):
     if len(st.session_state) > 0:
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
         params_in = loads(st.experimental_get_query_params().get("query").pop())
-    elif ValueError:
+    elif ValueError and len(st.session_state) > 0:
         st.session_state[key] == ''
+        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
         try:
             st.session_state[key] = params_in[key]
         except KeyError:
