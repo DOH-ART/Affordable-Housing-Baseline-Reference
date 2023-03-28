@@ -138,8 +138,6 @@ with st.sidebar:
                     st.stop()
             except KeyError:
                 st.stop()
-
-            st.write(st.session_state['jurisdiction_name'])
             
 
             st.session_state["geoid"] = (
