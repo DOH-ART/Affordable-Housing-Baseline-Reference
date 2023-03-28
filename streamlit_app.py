@@ -86,22 +86,22 @@ if len(params_in) > 0 and len(st.session_state) == 0:
     for key in list(params_dict.keys()):
         st.session_state[key] = params_dict[key]
 
-
 def selection_callback(key):
     print(st.session_state)
     if len(st.session_state) > 0:
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
-        print(st.experimental_get_query_params())
         params_in = loads(st.experimental_get_query_params().get("query").pop())
+    elif ValueError and len(st.session_state) > 0:
+        st.session_state[key] == ''
+        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
         try:
             st.session_state[key] = params_in[key]
-        except KeyError:
-            print("New session")
         except AttributeError:
             print("oops")
+        except KeyError:
+            print("New session")
     else:
         print("New session")
-
 
 with st.sidebar:
     with st.container():
