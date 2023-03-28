@@ -97,6 +97,8 @@ def selection_callback(key):
             st.session_state[key] = params_in[key]
         except KeyError:
             print("New session")
+        except AttributeError:
+            print("oops")
     else:
         print("New session")
 
