@@ -93,6 +93,8 @@ def selection_callback(key):
     if len(st.session_state) > 0:
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
         params_in = loads(st.experimental_get_query_params().get("query").pop())
+    elif ValueError:
+        st.session_state[key] == ''
         try:
             st.session_state[key] = params_in[key]
         except KeyError:
@@ -136,9 +138,6 @@ with st.sidebar:
                     st.stop()
             except KeyError:
                 st.stop()
-
-            st.write(st.session_state['jurisdiction_name'])
-            
 
             st.session_state["geoid"] = (
                 acs_data[acs_data['geography_name'] == st.session_state['jurisdiction_name']]
