@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import time
 from json import dumps, loads
-from openpyxl import workbook
 import io
 
 st.set_page_config(
@@ -87,12 +86,14 @@ if len(params_in) > 0 and len(st.session_state) == 0:
     for key in list(params_dict.keys()):
         st.session_state[key] = params_dict[key]
 
-
 def selection_callback(key):
     print(st.session_state)
     if len(st.session_state) > 0:
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
-        params_in = loads(st.experimental_get_query_params().get("query").pop())
+        try: 
+            params_in = loads(st.experimental_get_query_params().get("query").pop())
+        except AttributeError:
+            print("oops")
     elif ValueError and len(st.session_state) > 0:
         st.session_state[key] == ''
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
@@ -102,7 +103,6 @@ def selection_callback(key):
             print("New session")
     else:
         print("New session")
-
 
 with st.sidebar:
     with st.container():
@@ -139,6 +139,7 @@ with st.sidebar:
                     st.stop()
             except KeyError:
                 st.stop()
+            
 
             st.session_state["geoid"] = (
                 acs_data[acs_data['geography_name'] == st.session_state['jurisdiction_name']]
