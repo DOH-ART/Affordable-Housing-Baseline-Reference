@@ -437,7 +437,7 @@ with st.container():
             value=f"${st.session_state['median_income_selection']:,}",
         )
         st.caption(
-            "This median income selection was calcualted based on the your choices above"
+            "This median income selection was calculated based on the your choices above"
         )
 
     col1a, col1b, col1c = st.columns(3, gap="large")
