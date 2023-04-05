@@ -113,14 +113,15 @@ read_acs <- function(table_name,
   
   data_acs_joined <-
     data_acs_unpivoted %>%
-    filter(sumlevel %in% summary_levels) %>%
+    filter(sumlevel %in% selected_summary_levels) %>%
     left_join(data_table_shells, by = 'measure_id') %>%
     left_join(data_geo_w_uninc_muni, by = c('geoid', 'sumlevel'))
   
   results <-
     data_acs_joined %>%
     select(-matches(excluded_cols)) %>%
-    mutate(estimate = as.numeric(estimate))
+    mutate(estimate = as.numeric(estimate),
+           margin_of_error = as.numeric(margin_of_error))
   
   return(results)
 }
