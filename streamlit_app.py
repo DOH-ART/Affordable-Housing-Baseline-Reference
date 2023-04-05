@@ -11,8 +11,20 @@ st.set_page_config(
     },
 )
 st.title("Baseline Assistance Tool")
-st.subheader("Baseline and Goal Results")
 
+'''
+Welcome to the State of Colorado's Baseline Assistance Tool, this
+resource may be used to research and develop baseline amounts of affordable
+housing for municipalities and counties in filing commitments to increase
+affordable housing, unlocking funding made available by Proposition 123.
+
+To learn more about baselines, commitments, and Proposition 123
+go to [this page](https://engagedola.org/prop-123).
+'''
+
+st.write("---")
+
+st.subheader("Baseline and Goal Results")
 try:
     if st.session_state["median_income_selection"] != "":
         st.empty()
@@ -90,7 +102,7 @@ def selection_callback(key):
     print(st.session_state)
     if len(st.session_state) > 0:
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
-        try: 
+        try:
             params_in = loads(st.experimental_get_query_params().get("query").pop())
         except AttributeError:
             print("oops")
@@ -118,7 +130,7 @@ with st.sidebar:
                 key="jurisdiction_type",
                 on_change=selection_callback("jurisdiction_type"),
             )
-
+            
             try:
                 if st.session_state["jurisdiction_type"] == "":
                     st.stop()
@@ -133,7 +145,7 @@ with st.sidebar:
                 + st.session_state["jurisdiction_type"],
                 on_change=selection_callback("jurisdiction_name"),
             )
-
+            st.caption("Tip: Type in the box to search for a " + st.session_state["jurisdiction_type"])
             try:
                 if st.session_state["jurisdiction_name"] == "":
                     st.stop()
@@ -278,6 +290,7 @@ with st.sidebar:
                 round(ownership_unit_availability_rate_default, 2),
                 0.01,
                 key="sale_availability_rate",
+                help="The percent of home-ownership stock expected to be sold over the commitment period."
             )
             if "sale_availability_rate" not in st.session_state:
                 st.session_state[
@@ -299,6 +312,7 @@ with st.sidebar:
                 round(rental_unit_availability_rate_default, 2),
                 0.01,
                 key="rental_availability_rate",
+                help="The percent of rental stock expected to be newly leased over the commitment period."
             )
             if "rental_availability_rate" not in st.session_state:
                 st.session_state[
@@ -312,6 +326,7 @@ with st.sidebar:
                 3.5,
                 0.01,
                 key="home_value_to_income_ratio",
+                help="This is used to calculate the maximum price of affordable for-sale homes."
             )
             if "home_value_to_income_ratio" not in st.session_state:
                 st.session_state["home_value_to_income_ratio"] = 3.5
@@ -437,7 +452,7 @@ with st.container():
             value=f"${st.session_state['median_income_selection']:,}",
         )
         st.caption(
-            "This median income selection was calculated based on the your choices above"
+            "This median income selection was calculated based on your choices above."
         )
 
     col1a, col1b, col1c = st.columns(3, gap="large")
@@ -452,7 +467,17 @@ with st.container():
             label="Three Year Cycle Goal",
             value=f"{round(total_affordable_units*0.09):,}",
         )
+'''
+View additonal context and details on these results by clicking on the
+expanders below. You can save your selections and results to revisit them later
+by bookmarking this page, and you can share them by copying the URL in the address
+bar and pasting it into an email or chat.
 
+Data regarding estimated rents, home values, and unit availability
+rates was obtained from the U.S. Census Bureau American Community Survey
+as 5-year averages from 2017 to 2021. This is the most recently available
+data and can be regarded as from roughly 2019.
+'''
 with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
     st.write(
         "These income limits have been calculated based on your selections in the sidebar:"
@@ -487,33 +512,46 @@ with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
             + " x "
             + f"{st.session_state['rental_availability_rate']:}",
         )
+        st.caption("Included: mortgage principal, interest, homeowners insurance, and property taxes.")
+        st.caption("Excluded: utilities payments of any kind, HOA fees, and lot rents for mobile homes.")
 
     with col6:
         st.metric(
             label="Max Affordable Rent",
             value=f"${max_affordable_rent:,}",
-            help="Renter Income Limit of ("
+            help="Maximum rent of ("
             + f"${renter_income_limit:,}"
             + "/12) x 0.3",
         )
+        st.caption("Included: rental payments.")
+        st.caption("Excluded: utilities payments of any kind.")
+
+
 
 owner_export = owner_results[
     ["Range", "Occupied Units", "Available Units", "Affordable Units"]
 ]
 
+owner_export.loc['Total'] = owner_export[["Occupied Units", "Available Units", "Affordable Units"]].sum()
+
 renter_export = renter_results[
     ["Range", "Occupied Units", "Available Units", "Affordable Units"]
 ]
 
+renter_export.loc['Total'] = renter_export[["Occupied Units", "Available Units", "Affordable Units"]].sum()
+
 with st.expander("Housing Affordability by Range"):
     tab1, tab2 = st.tabs(["For-Sale Table", "Rental Table"])
     with tab1:
-        st.dataframe(owner_export)
+        st.dataframe(owner_export,
+                     height=425)
+        st.caption('Source: U.S. Census Bureau (2022). Table B25075: Value, 2017-2021 American Community Survey 5-year estimates.')
     with tab2:
-        st.dataframe(renter_export)
+        st.dataframe(renter_export,
+                     height=425)
+        st.caption('Source: U.S. Census Bureau (2022). Table B25063: Gross Rent, 2017-2021 American Community Survey 5-year estimates.')
 
 buffer = io.BytesIO()
-
 with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
     # Write each dataframe to a different worksheet.
     owner_export.style.to_excel(writer, sheet_name="For-Sale Table", index=False)
