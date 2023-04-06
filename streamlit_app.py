@@ -23,7 +23,7 @@ except KeyError:
 
 acs_data_url = "./acs.csv"
 income_data_url = "./income_limits.csv"
-
+inflation_data_url = "./InflationRates.csv"
 
 def load_data(data_url):
     data = pd.read_csv(
@@ -46,6 +46,7 @@ def load_data(data_url):
 
 acs_data = load_data(acs_data_url)
 income_data = load_data(income_data_url)
+inflation_data = load_data(inflation_data_url)
 
 acs_data["geography_name"] = acs_data["geography_name"].astype(str)
 
@@ -317,6 +318,17 @@ with st.sidebar:
                 st.session_state["home_value_to_income_ratio"] = 3.5
             st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
 
+            st.slider(
+                "Inflation Rate",
+                2017,
+                2022,
+                2017,
+                1,
+                key = "Inflation_rate"
+            )
+            if "Inflation_rate" not in st.session_state:
+                st.session_state["Inflation_rate"] = 2017
+            st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
 
 renter_income_limit = round(st.session_state["median_income_selection"] * 0.6)
 owner_income_limit = st.session_state["median_income_selection"]
@@ -324,7 +336,13 @@ max_affordable_rent = round((renter_income_limit / 12) * 0.3)
 max_affordable_price = round(
     owner_income_limit * st.session_state["home_value_to_income_ratio"]
 )
+inflation_rate = st.session_state["Inflation_rate"]
 
+inflation_ownership = inflation_data['ownership inflation 2017 base year'][inflation_data['year'] == inflation_rate].values[0]
+inflation_ownership = inflation_ownership / 100
+
+inflation_rental = inflation_data['rental inflation 2017 base year'][inflation_data['year'] == inflation_rate].values[0]
+inflation_rental = inflation_rental / 100
 
 owner_results = (
     acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
@@ -332,8 +350,17 @@ owner_results = (
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
 
+ownership_addition_list_max = owner_results['range_max'] * inflation_ownership
+ownership_addition_list_min = owner_results['range_min'] * inflation_ownership
+
+owner_results['range_max_inflated'] = owner_results['range_max'] + ownership_addition_list_max
+owner_results['range_min_inflated'] = owner_results['range_min'] + ownership_addition_list_min
+
+st.write(owner_results)
+
 owner_results["range_max"][owner_results["range_max"] < 200000] = 199999
 owner_results["range_min"][owner_results["range_max"] < 200000] = 0
+
 owner_results = pd.pivot_table(
     owner_results, values="estimate", index=["range_max", "range_min"], aggfunc=sum
 ).reset_index()
@@ -344,8 +371,15 @@ renter_results = (
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
 
+renter_addition_list_max = renter_results['range_max'] * inflation_rental
+renter_addition_list_min = renter_results['range_min'] * inflation_rental
+
+renter_results['range_max_inflated'] = renter_results['range_max'] + renter_addition_list_max
+renter_results['range_min_inflated'] = renter_results['range_min'] + renter_addition_list_min
+
 renter_results["range_max"][renter_results["range_max"] < 800] = 799
 renter_results["range_min"][renter_results["range_max"] < 800] = 0
+
 renter_results = pd.pivot_table(
     renter_results, values="estimate", index=["range_max", "range_min"], aggfunc=sum
 ).reset_index()
