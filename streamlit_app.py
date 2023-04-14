@@ -373,7 +373,7 @@ owner_results["range_max"][owner_results["range_max"] < 200000] = 199999
 owner_results["range_min"][owner_results["range_max"] < 200000] = 0
 
 for k in change_list:
-    owner_results['inflated estimates'][(owner_results['range_min'] < k) & (owner_results['range_max'] > k)] += 1
+    owner_results['uniform_estimates'][(owner_results['range_min'] < k) & (owner_results['range_max'] > k)] += 1
 
 st.write(owner_results)
 
