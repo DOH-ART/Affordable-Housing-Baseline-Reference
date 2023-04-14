@@ -409,7 +409,7 @@ renter_results["range_max_inflated"][renter_results["range_max_inflated"] < 800]
 renter_results["range_min_inflated"][renter_results["range_max_inflated"] < 800] = 0
 
 for k in change_list:
-    renter_results['inflated estimates'][(renter_results['range_min'] < k) & (renter_results['range_max'] > k)] += 1
+    renter_results['uniform_estimates'][(renter_results['range_min'] < k) & (renter_results['range_max'] > k)] += 1
 
 renter_results = pd.pivot_table(
     renter_results, values="estimate", index=["range_max_inflated", "range_min_inflated"], aggfunc=sum
