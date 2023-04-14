@@ -321,14 +321,14 @@ with st.sidebar:
 
             st.slider(
                 "Inflation Rate",
-                2017,
-                2022,
-                2017,
-                1,
-                key = "Inflation_rate"
+                0.0,
+                .2,
+                .1,
+                0.1,
+                key = "inflation_rate"
             )
-            if "Inflation_rate" not in st.session_state:
-                st.session_state["Inflation_rate"] = 2017
+            if "inflation_rate" not in st.session_state:
+                st.session_state["inflation_rate"] = .1
             st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
 
 renter_income_limit = round(st.session_state["median_income_selection"] * 0.6)
@@ -337,49 +337,38 @@ max_affordable_rent = round((renter_income_limit / 12) * 0.3)
 max_affordable_price = round(
     owner_income_limit * st.session_state["home_value_to_income_ratio"]
 )
-inflation_rate = st.session_state["Inflation_rate"]
-
-inflation_ownership = inflation_data['ownership inflation 2017 base year'][inflation_data['year'] == inflation_rate].values[0]
-inflation_ownership = inflation_ownership / 100
-
-inflation_rental = inflation_data['rental inflation 2017 base year'][inflation_data['year'] == inflation_rate].values[0]
-inflation_rental = inflation_rental / 100
-
 owner_results = (
     acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
              (acs_data['title'] == 'VALUE')]
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
-
-ownership_addition_list_max = owner_results['range_max'] * inflation_ownership
-ownership_addition_list_min = owner_results['range_min'] * inflation_ownership
-
-owner_results['range_max_inflated'] = owner_results['range_max'] + ownership_addition_list_max
-owner_results['range_min_inflated'] = owner_results['range_min'] + ownership_addition_list_min
-
-owner_results['uniform_estimates'] = 0 
-change_list = []
-for idx, row in owner_results.iterrows():
-    uniform_random_price = []
-    for i in range(0, int(row['estimate'])//2):
-        x = round(random.uniform(row['range_min_inflated'],row['range_max_inflated']), 2)    
-        if x > row['range_max']:
-            change_list.append(x)
-        else:
-            uniform_random_price.append(x)
-    owner_results.at[idx,'uniform_estimates'] = len(uniform_random_price)
-
-owner_results["range_max"][owner_results["range_max"] < 200000] = 199999
 owner_results["range_min"][owner_results["range_max"] < 200000] = 0
+owner_results["range_max"][owner_results["range_max"] < 200000] = 199999
 
-for k in change_list:
-    owner_results['uniform_estimates'][(owner_results['range_min'] < k) & (owner_results['range_max'] > k)] += 1
-
-st.write(owner_results)
 
 owner_results = pd.pivot_table(
-    owner_results, values="estimate", index=["range_max_inflated", "range_min_inflated"], aggfunc=sum
+    owner_results, values=["estimate"], index=["range_min","range_max"], aggfunc=sum
 ).reset_index()
+
+owner_max_prices = owner_results['range_max'].to_list()
+
+inflation_rate = st.session_state["inflation_rate"]
+rand_list = [0] * len(owner_results.index)
+for idx, row in owner_results.iterrows():
+    uniform_random_price = []
+    row_index = owner_max_prices.index(row['range_max'])
+    for i in range(0, int(row['estimate'])):
+        x = random.randint(row['range_min'], row['range_max'])
+        x = x * (1 + inflation_rate)
+        if x > row['range_max']:
+           try:
+            rand_list[row_index+1] = rand_list[row_index+1]+1
+           except IndexError:
+            rand_list[row_index] = rand_list[row_index]+1
+        else:
+            rand_list[row_index] = rand_list[row_index]+1
+
+owner_results['estimate_inflated'] = rand_list
 
 renter_results = (
     acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
@@ -387,33 +376,31 @@ renter_results = (
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
 
-renter_addition_list_max = renter_results['range_max'] * inflation_rental
-renter_addition_list_min = renter_results['range_min'] * inflation_rental
-
-renter_results['range_max_inflated'] = renter_results['range_max'] + renter_addition_list_max
-renter_results['range_min_inflated'] = renter_results['range_min'] + renter_addition_list_min
-
-renter_results['uniform_estimates'] = 0 
-change_list = []
-for idx, row in renter_results.iterrows():
-    uniform_random_price = []
-    for i in range(0, int(row['estimate'])//2):
-        x = round(random.uniform(row['range_min_inflated'],row['range_max_inflated']), 2)    
-        if x > row['range_max']:
-            change_list.append(x)
-        else:
-            uniform_random_price.append(x)
-    renter_results.at[idx,'uniform_estimates'] = len(uniform_random_price)
-
-renter_results["range_max_inflated"][renter_results["range_max_inflated"] < 800] = 799
-renter_results["range_min_inflated"][renter_results["range_max_inflated"] < 800] = 0
-
-for k in change_list:
-    renter_results['uniform_estimates'][(renter_results['range_min'] < k) & (renter_results['range_max'] > k)] += 1
+renter_results["range_max"][renter_results["range_max"] < 800] = 799
+renter_results["range_min"][renter_results["range_max"] < 800] = 0
 
 renter_results = pd.pivot_table(
-    renter_results, values="estimate", index=["range_max_inflated", "range_min_inflated"], aggfunc=sum
+    renter_results, values="estimate", index=["range_max", "range_min"], aggfunc=sum
 ).reset_index()
+
+inflation_rate = 0.10
+rand_list = [0] * len(renter_results.index)
+for idx, row in owner_results.iterrows():
+    uniform_random_price = []
+    row_index = owner_max_prices.index(row['range_max'])
+    for i in range(0, int(row['estimate'])):
+        x = random.randint(row['range_min'], row['range_max'])
+        x = x * (1 + inflation_rate)
+        if x > row['range_max']:
+           try:
+            rand_list[row_index+1] = rand_list[row_index+1]+1
+           except IndexError:
+            rand_list[row_index] = rand_list[row_index]+1
+        else:
+            rand_list[row_index] = rand_list[row_index]+1
+
+renter_results['estimate_inflated'] = rand_list
+
 
 owner_results["Available Units"] = round(
     owner_results["estimate"] * st.session_state["sale_availability_rate"]
@@ -426,14 +413,14 @@ renter_results["Available Units"] = round(
 
 owner_results["Percent of Units Affordable"] = 0
 for idx, rows in owner_results.iterrows():
-    if rows["range_max_inflated"] <= max_affordable_price:
+    if rows["range_max"] <= max_affordable_price:
         owner_results.at[idx, "Percent of Units Affordable"] = 1
     elif (
-        rows["range_min_inflated"] <= max_affordable_price
-        and rows["range_max_inflated"] >= max_affordable_price
+        rows["range_min"] <= max_affordable_price
+        and rows["range_max"] >= max_affordable_price
     ):
         owner_results.at[idx, "Percent of Units Affordable"] = (
-            max_affordable_price / rows["range_max_inflated"]
+            max_affordable_price / rows["range_max"]
         )
     else:
         owner_results.at[idx, "Percent of Units Affordable"] = 0
@@ -441,25 +428,25 @@ for idx, rows in owner_results.iterrows():
 
 renter_results["Percent of Units Affordable"] = 0
 for idx, rows in renter_results.iterrows():
-    if rows["range_max_inflated"] <= max_affordable_rent:
+    if rows["range_max"] <= max_affordable_rent:
         renter_results.at[idx, "Percent of Units Affordable"] = 1
     elif (
-        rows["range_min_inflated"] <= max_affordable_rent
-        and rows["range_max_inflated"] >= max_affordable_rent
+        rows["range_min"] <= max_affordable_rent
+        and rows["range_max"] >= max_affordable_rent
     ):
         renter_results.at[idx, "Percent of Units Affordable"] = (
-            max_affordable_rent / rows["range_max_inflated"]
+            max_affordable_rent / rows["range_max"]
         )
     else:
         renter_results.at[idx, "Percent of Units Affordable"] = 0
 
 
 owner_percent_affordable = sum(
-    owner_results["Available Units"][owner_results["range_max_inflated"] <= max_affordable_price]
+    owner_results["Available Units"][owner_results["range_max"] <= max_affordable_price]
 ) / sum(owner_results["estimate"])
 renter_percent_affordable = sum(
     renter_results["Available Units"][
-        renter_results["range_max_inflated"] <= max_affordable_rent
+        renter_results["range_max"] <= max_affordable_rent
     ]
 ) / sum(renter_results["estimate"])
 
@@ -472,14 +459,14 @@ renter_results["Affordable Units"] = round(
 
 
 owner_results["Range"] = (
-    owner_results["range_min_inflated"].map("${:,.0f}".format)
+    owner_results["range_min"].map("${:,.0f}".format)
     + "  to "
-    + owner_results["range_max_inflated"].map("${:,.0f}".format)
+    + owner_results["range_max"].map("${:,.0f}".format)
 )
 renter_results["Range"] = (
-    renter_results["range_min_inflated"].map("${:,.0f}".format)
+    renter_results["range_min"].map("${:,.0f}".format)
     + "  to "
-    + renter_results["range_max_inflated"].map("${:,.0f}".format)
+    + renter_results["range_max"].map("${:,.0f}".format)
 )
 owner_results["Occupied Units"] = owner_results["estimate"]
 renter_results["Occupied Units"] = renter_results["estimate"]
@@ -563,11 +550,11 @@ with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
         )
 
 owner_export = owner_results[
-    ["Range", "Occupied Units", "Available Units", "Affordable Units"]
+    ["Range", "Occupied Units", 'estimate_inflated',"Available Units", "Affordable Units"]
 ]
 
 renter_export = renter_results[
-    ["Range", "Occupied Units", "Available Units", "Affordable Units"]
+    ["Range", "Occupied Units",'estimate_inflated', "Available Units", "Affordable Units"]
 ]
 
 with st.expander("Housing Affordability by Range"):
