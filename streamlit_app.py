@@ -369,11 +369,13 @@ for idx, row in owner_results.iterrows():
             uniform_random_price.append(x)
     owner_results.at[idx,'uniform_estimates'] = len(uniform_random_price)
 
+for k in change_list:
+    owner_results['uniform_estimates'][(owner_results['range_min'] < k) & (owner_results['range_max'] > k)] += 1
+
 owner_results["range_max"][owner_results["range_max"] < 200000] = 199999
 owner_results["range_min"][owner_results["range_max"] < 200000] = 0
 
-for k in change_list:
-    owner_results['uniform_estimates'][(owner_results['range_min'] < k) & (owner_results['range_max'] > k)] += 1
+
 
 st.write(owner_results)
 
@@ -405,11 +407,11 @@ for idx, row in renter_results.iterrows():
             uniform_random_price.append(x)
     renter_results.at[idx,'uniform_estimates'] = len(uniform_random_price)
 
-renter_results["range_max_inflated"][renter_results["range_max_inflated"] < 800] = 799
-renter_results["range_min_inflated"][renter_results["range_max_inflated"] < 800] = 0
-
 for k in change_list:
     renter_results['uniform_estimates'][(renter_results['range_min'] < k) & (renter_results['range_max'] > k)] += 1
+
+renter_results["range_max_inflated"][renter_results["range_max_inflated"] < 800] = 799
+renter_results["range_min_inflated"][renter_results["range_max_inflated"] < 800] = 0
 
 renter_results = pd.pivot_table(
     renter_results, values="estimate", index=["range_max_inflated", "range_min_inflated"], aggfunc=sum
