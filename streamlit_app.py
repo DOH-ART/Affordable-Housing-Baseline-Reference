@@ -358,6 +358,7 @@ owner_results['range_max_inflated'] = owner_results['range_max'] + ownership_add
 owner_results['range_min_inflated'] = owner_results['range_min'] + ownership_addition_list_min
 
 owner_results['uniform_estimates'] = 0 
+owner_results['uniform_estimates_with_changes'] = 0 
 change_list = []
 for idx, row in owner_results.iterrows():
     uniform_random_price = []
@@ -370,7 +371,7 @@ for idx, row in owner_results.iterrows():
     owner_results.at[idx,'uniform_estimates'] = len(uniform_random_price)
 
 for k in change_list:
-    owner_results['uniform_estimates'][(owner_results['range_min'] < k) & (owner_results['range_max'] > k)] += 1
+    owner_results['uniform_estimates_with_changes'][(owner_results['range_min'] < k) & (owner_results['range_max'] > k)] += 1
 
 owner_results["range_max"][owner_results["range_max"] < 200000] = 199999
 owner_results["range_min"][owner_results["range_max"] < 200000] = 0
@@ -396,6 +397,7 @@ renter_results['range_max_inflated'] = renter_results['range_max'] + renter_addi
 renter_results['range_min_inflated'] = renter_results['range_min'] + renter_addition_list_min
 
 renter_results['uniform_estimates'] = 0 
+renter_results['uniform_estimates_with_changes'] = 0 
 change_list = []
 for idx, row in renter_results.iterrows():
     uniform_random_price = []
@@ -406,9 +408,10 @@ for idx, row in renter_results.iterrows():
         else:
             uniform_random_price.append(x)
     renter_results.at[idx,'uniform_estimates'] = len(uniform_random_price)
+    renter_results['uniform_estimates_with_changes'] = len(uniform_random_price)
 
 for k in change_list:
-    renter_results['uniform_estimates'][(renter_results['range_min'] < k) & (renter_results['range_max'] > k)] += 1
+    renter_results['uniform_estimates_with_changes'][(renter_results['range_min'] < k) & (renter_results['range_max'] > k)] += 1
 
 renter_results["range_max_inflated"][renter_results["range_max_inflated"] < 800] = 799
 renter_results["range_min_inflated"][renter_results["range_max_inflated"] < 800] = 0
