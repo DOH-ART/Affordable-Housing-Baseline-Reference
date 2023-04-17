@@ -287,7 +287,7 @@ with st.container():
         st.session_state["median_income_selection"] = median_income_selection
         selection_callback("median_income_selection")
 
-    with st.expander("Customizable variables", expanded=True):
+    with st.expander("Economic Variables", expanded=True):
         ownership_unit_availability_rate_default = (
             acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
                         (acs_data['title'] == "VALUE")]
