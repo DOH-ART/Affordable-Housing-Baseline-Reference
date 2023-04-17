@@ -6,13 +6,41 @@ import io
 import random 
 
 st.set_page_config(
-    layout="centered",
+    layout="wide",
     menu_items={
         "Report a Bug": "https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/b44faba8"
     },
 )
+st.image("https://cdola.colorado.gov/sites/dola/files/logo.svg")
+st.write(
+        "[Submit Feedback](https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/e6a34351?os_authType=none)"
+    )
 st.title("Baseline Assistance Tool")
-st.subheader("Baseline and Goal Results")
+
+tab1a, tab1b, tab1c = st.tabs(["Overview", "Definitions","Help"])
+with tab1a:
+    '''
+    Welcome to the State of Colorado's Baseline Assistance Tool. This
+    resource can be used to calculate the baseline amount of affordable
+    housing within a municipality or county, which can then be incorporated
+    into a commitment to annual increases in affordable housing.
+
+    Local governments file a commitment with the Division to unlock funding
+    for affordable housing projects and programs made available by Proposition 123.
+
+    To learn more about baselines, commitments, and Proposition 123
+    go to [this page](https://engagedola.org/prop-123).
+    '''
+with tab1b:
+    '''
+    '''
+with tab1c:
+    '''
+    '''
+
+st.write("---")
+
+st.subheader("Selections")
 
 try:
     if st.session_state["median_income_selection"] != "":
@@ -106,237 +134,262 @@ def selection_callback(key):
     else:
         print("New session")
 
-with st.sidebar:
-    with st.container():
-        st.image("https://cdola.colorado.gov/sites/dola/files/logo.svg")
-        st.write(
-            "[Submit Feedback](https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/e6a34351?os_authType=none)"
+with st.container():
+    with st.expander("Start here", expanded=True):
+
+        st.selectbox(
+            "Step 1: Select a jurisdiction type",
+            ["", "County", "Municipality"],
+            key="jurisdiction_type",
+            on_change=selection_callback("jurisdiction_type"),
         )
-        with st.expander("Start here", expanded=True):
 
-            st.selectbox(
-                "Step 1: Select a jurisdiction type",
-                ["", "County", "Municipality"],
-                key="jurisdiction_type",
-                on_change=selection_callback("jurisdiction_type"),
-            )
-
-            try:
-                if st.session_state["jurisdiction_type"] == "":
-                    st.stop()
-            except KeyError:
+        try:
+            if st.session_state["jurisdiction_type"] == "":
                 st.stop()
+        except KeyError:
+            st.stop()
 
-            st.selectbox(
-                "Step 2: Select a " + st.session_state["jurisdiction_type"],
-                jursidiction_options[st.session_state["jurisdiction_type"]],
-                key="jurisdiction_name",
-                help="Tip: Type in the box to search for a "
-                + st.session_state["jurisdiction_type"],
-                on_change=selection_callback("jurisdiction_name"),
-            )
-
-            try:
-                if st.session_state["jurisdiction_name"] == "":
-                    st.stop()
-            except KeyError:
+        st.selectbox(
+            "Step 2: Select a " + st.session_state["jurisdiction_type"],
+            jursidiction_options[st.session_state["jurisdiction_type"]],
+            key="jurisdiction_name",
+            help="Tip: Type in the box to search for a "
+            + st.session_state["jurisdiction_type"],
+            on_change=selection_callback("jurisdiction_name"),
+        )
+        st.caption("Tip: Type in the box to search for a " + st.session_state["jurisdiction_type"])
+        try:
+            if st.session_state["jurisdiction_name"] == "":
                 st.stop()
-            
+        except KeyError:
+            st.stop()
+        
 
-            st.session_state["geoid"] = (
-                acs_data[acs_data['geography_name'] == st.session_state['jurisdiction_name']]
-                .loc[:, "geoid"]
-                .drop_duplicates()
-                .to_list()
-                .pop()
-            )
+        st.session_state["geoid"] = (
+            acs_data[acs_data['geography_name'] == st.session_state['jurisdiction_name']]
+            .loc[:, "geoid"]
+            .drop_duplicates()
+            .to_list()
+            .pop()
+        )
 
-            st.selectbox(
-                "Step 3: Income Limit Type",
-                income_limit_name_options,
-                index=0,
-                key="income_limit_type",
-                help="Select one of three Income Limit Types, we suggest Median Family Income because it is simplest, and likely most accurate.",
-            )
+        st.selectbox(
+            "Step 3: Income Limit Type",
+            income_limit_name_options,
+            index=0,
+            key="income_limit_type",
+            help="Select one of three Income Limit Types, we suggest Median Family Income because it is simplest, and likely most accurate.",
+        )
 
-            st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
 
-            try:
-                if st.session_state["income_limit_type"] == "":
-                    st.stop()
-            except KeyError:
+        try:
+            if st.session_state["income_limit_type"] == "":
                 st.stop()
+        except KeyError:
+            st.stop()
 
-            year_options = (
-                income_data[(income_data['geoid'] == st.session_state['geoid']) & 
-                            (income_data['il_name'] == st.session_state['income_limit_type'])]
-                .loc[:, "il_year"]
-                .drop_duplicates()
-                .sort_values(ascending=False)
-                .to_list()
-            )
+        year_options = (
+            income_data[(income_data['geoid'] == st.session_state['geoid']) & 
+                        (income_data['il_name'] == st.session_state['income_limit_type'])]
+            .loc[:, "il_year"]
+            .drop_duplicates()
+            .sort_values(ascending=False)
+            .to_list()
+        )
 
-            year_options.insert(0, "")
+        year_options.insert(0, "")
 
-            st.selectbox(
-                "Step 4: Select an income Limit Year",
-                year_options,
-                index=0,
-                key="year",
-                help="Select the year that the income limit data was collected or published in, we recommend "
-                + str(year_options[1])
-                + " because it is likely most accurate.",
-            )
+        st.selectbox(
+            "Step 4: Select an income Limit Year",
+            year_options,
+            index=0,
+            key="year",
+            help="Select the year that the income limit data was collected or published in, we recommend "
+            + str(year_options[1])
+            + " because it is likely most accurate.",
+        )
 
-            st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
 
-            try:
-                if st.session_state["year"] == "":
-                    st.stop()
-            except KeyError:
+        try:
+            if st.session_state["year"] == "":
                 st.stop()
+        except KeyError:
+            st.stop()
 
-            adjacency_options = (
-                income_data[(income_data['geoid'] == st.session_state['geoid']) & 
-                            (income_data['il_name'] == st.session_state['income_limit_type'])]
-                .loc[:, "il_type"]
-                .drop_duplicates()
-                .to_list()
-            )
+        adjacency_options = (
+            income_data[(income_data['geoid'] == st.session_state['geoid']) & 
+                        (income_data['il_name'] == st.session_state['income_limit_type'])]
+            .loc[:, "il_type"]
+            .drop_duplicates()
+            .to_list()
+        )
 
-            adjacency_options.insert(0, "")
+        adjacency_options.insert(0, "")
 
-            try:
-                if st.session_state["income_limit_type"] == "State Median Income":
-                    adjacency_selection = "income_limit_type"
-                    st.session_state["income_limit"] = "State Median Income"
+        try:
+            if st.session_state["income_limit_type"] == "State Median Income":
+                adjacency_selection = "income_limit_type"
+                st.session_state["income_limit"] = "State Median Income"
 
-                else:
-                    st.selectbox(
-                        "Step 5: Select an Income Limit",
-                        adjacency_options,
-                        key="income_limit",
-                        help="Select the counties that the income limit is taken from, your Own County is likely most appropriate.",
-                    )
-
-                    st.experimental_set_query_params(
-                        query=dumps(st.session_state.to_dict())
-                    )
-            except KeyError:
-                st.stop()
-
-            if (
-                st.session_state["income_limit"] == ""
-                and st.session_state["income_limit_type"] != "State Median Income"
-            ):
-                st.stop()
-
-            if st.session_state["income_limit_type"] == "Area Median Income":
-                household_size_selection = st.slider(
-                    "Household Size",
-                    1,
-                    8,
-                    3,
-                    key="hh_size",
-                    help="The average (rounded) size of households in Colorado is 3, and is likely the most appropriate selection.",
+            else:
+                st.selectbox(
+                    "Step 5: Select an Income Limit",
+                    adjacency_options,
+                    key="income_limit",
+                    help="Select the counties that the income limit is taken from, your Own County is likely most appropriate.",
                 )
+
                 st.experimental_set_query_params(
                     query=dumps(st.session_state.to_dict())
                 )
-            else:
-                st.session_state["hh_size"] = 0
-            if (
-                st.session_state["hh_size"] == 0
-                and st.session_state["income_limit_type"] == "Area Median Income"
-            ):
-                st.stop()
+        except KeyError:
+            st.stop()
 
-            median_income_selection = (income_data[(income_data['geoid'] == st.session_state['geoid']) &
-                                                   (income_data['il_name'] == st.session_state['income_limit_type']) &
-                                                   (income_data['il_type'] == st.session_state['income_limit']) &
-                                                   (income_data['il_hh_size'] == st.session_state['hh_size']) &
-                                                   (income_data['il_year'] == st.session_state['year'])]
-                .loc[:, "income_limit"]
-                .to_list()
-                .pop()
-            )
+        if (
+            st.session_state["income_limit"] == ""
+            and st.session_state["income_limit_type"] != "State Median Income"
+        ):
+            st.stop()
 
-            st.session_state["median_income_selection"] = median_income_selection
-            selection_callback("median_income_selection")
+        if st.session_state["income_limit_type"] == "Area Median Income":
+            household_size_selection = st.slider(
+                "Household Size",
+                1,
+                8,
+                3,
+                key="hh_size",
+                help="The average (rounded) size of households in Colorado is 3, and is likely the most appropriate selection.",
+            )
+            st.experimental_set_query_params(
+                query=dumps(st.session_state.to_dict())
+            )
+        else:
+            st.session_state["hh_size"] = 0
+        if (
+            st.session_state["hh_size"] == 0
+            and st.session_state["income_limit_type"] == "Area Median Income"
+        ):
+            st.stop()
 
-        with st.expander("Optional variables", expanded=False):
-            ownership_unit_availability_rate_default = (
-                acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
-                         (acs_data['title'] == "VALUE")]
-                .loc[:, "proration_available_units"]
-                .drop_duplicates()
-                .to_list()
-                .pop()
-            )
-            st.slider(
-                "Sale unit Availability Rate",
-                0.0,
-                1.0,
-                round(ownership_unit_availability_rate_default, 2),
-                0.01,
-                key="sale_availability_rate",
-            )
-            if "sale_availability_rate" not in st.session_state:
-                st.session_state[
-                    "sale_availability_rate"
-                ] = ownership_unit_availability_rate_default
-            st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
-            rental_unit_availability_rate_default = (
-                acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
-                         (acs_data['title'] == 'GROSS RENT')]
-                .loc[:, "proration_available_units"]
-                .drop_duplicates()
-                .to_list()
-                .pop()
-            )
-            st.slider(
-                "Rental Unit Availability Rate",
-                0.0,
-                1.0,
-                round(rental_unit_availability_rate_default, 2),
-                0.01,
-                key="rental_availability_rate",
-            )
-            if "rental_availability_rate" not in st.session_state:
-                st.session_state[
-                    "rental_availability_rate"
-                ] = rental_unit_availability_rate_default
-            st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
-            st.slider(
-                "Home Value to Income Ratio",
-                2.5,
-                4.5,
-                3.5,
-                0.01,
-                key="home_value_to_income_ratio",
-            )
-            if "home_value_to_income_ratio" not in st.session_state:
-                st.session_state["home_value_to_income_ratio"] = 3.5
-            st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        median_income_selection = (income_data[(income_data['geoid'] == st.session_state['geoid']) &
+                                                (income_data['il_name'] == st.session_state['income_limit_type']) &
+                                                (income_data['il_type'] == st.session_state['income_limit']) &
+                                                (income_data['il_hh_size'] == st.session_state['hh_size']) &
+                                                (income_data['il_year'] == st.session_state['year'])]
+            .loc[:, "income_limit"]
+            .to_list()
+            .pop()
+        )
 
-            st.slider(
-                "Inflation Rate",
-                0.0,
-                .2,
-                .1,
-                0.1,
-                key = "inflation_rate"
-            )
-            if "inflation_rate" not in st.session_state:
-                st.session_state["inflation_rate"] = .1
-            st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        st.session_state["median_income_selection"] = median_income_selection
+        selection_callback("median_income_selection")
+
+    with st.expander("Customizable variables", expanded=True):
+        ownership_unit_availability_rate_default = (
+            acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
+                        (acs_data['title'] == "VALUE")]
+            .loc[:, "proration_available_units"]
+            .drop_duplicates()
+            .to_list()
+            .pop()
+        )
+        st.slider(
+            "Sale unit Availability Rate",
+            0.0,
+            1.0,
+            round(ownership_unit_availability_rate_default, 2),
+            0.01,
+            key="sale_availability_rate",
+            help="The percent of home-ownership stock expected to be sold over the commitment period."
+        )
+        if "sale_availability_rate" not in st.session_state:
+            st.session_state[
+                "sale_availability_rate"
+            ] = ownership_unit_availability_rate_default
+        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        rental_unit_availability_rate_default = (
+            acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
+                        (acs_data['title'] == 'CONTRACT RENT')]
+            .loc[:, "proration_available_units"]
+            .drop_duplicates()
+            .to_list()
+            .pop()
+        )
+        st.slider(
+            "Rental Unit Availability Rate",
+            0.0,
+            1.0,
+            round(rental_unit_availability_rate_default, 2),
+            0.01,
+            key="rental_availability_rate",
+            help="The percent of rental stock expected to be newly leased over the commitment period."
+        )
+        if "rental_availability_rate" not in st.session_state:
+            st.session_state[
+                "rental_availability_rate"
+            ] = rental_unit_availability_rate_default
+        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        if "home_value_to_income_ratio" not in st.session_state:
+            st.session_state["home_value_to_income_ratio"] = 3.5
+        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+
+        st.slider(
+            "Inflation Rate",
+            0.0,
+            .2,
+            .1,
+            0.01,
+            key = "inflation_rate"
+        )
+        if "inflation_rate" not in st.session_state:
+            st.session_state["inflation_rate"] = .1
+        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+    with st.expander("Homebuyer Variables", expanded=True):
+        st.number_input(
+            "Mortgage Interest Rate",
+            0.01,
+            0.08,
+            0.03,
+            key="interest_rate",
+        )
+        st.selectbox(
+            "Mortgage Term (Years)",
+            [15,20,30,40],
+            index=2,
+            key="mortgage_term",
+        )
+        st.number_input(
+            "Property Tax Amount (Annual)",
+            0,
+            5000,
+            3000,
+            1,
+            key="property_tax",
+        )
+        st.number_input(
+            "Property/Mortgage Insurance Amount (Annual)",
+            0,
+            5000,
+            1000,
+            1,
+            key="insurance",
+        )
+        st.slider(
+            "Down Payment (Percent)",
+            0.0,
+            0.3,
+            0.05,
+            0.01,
+            key="down_payment",
+        )
+
 
 renter_income_limit = round(st.session_state["median_income_selection"] * 0.6)
 owner_income_limit = st.session_state["median_income_selection"]
 max_affordable_rent = round((renter_income_limit / 12) * 0.3)
-max_affordable_price = round(
-    owner_income_limit * st.session_state["home_value_to_income_ratio"]
-)
 owner_results = (
     acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
              (acs_data['title'] == 'VALUE')]
@@ -355,7 +408,6 @@ owner_max_prices = owner_results['range_max'].to_list()
 inflation_rate = st.session_state["inflation_rate"]
 rand_list = [0] * len(owner_results.index)
 for idx, row in owner_results.iterrows():
-    uniform_random_price = []
     row_index = owner_max_prices.index(row['range_max'])
     for i in range(0, int(row['estimate'])):
         x = random.randint(row['range_min'], row['range_max'])
@@ -368,11 +420,11 @@ for idx, row in owner_results.iterrows():
         else:
             rand_list[row_index] = rand_list[row_index]+1
 
-owner_results['estimate_inflated'] = rand_list
+owner_results['Occupied Units (Inflation Adjusted)'] = rand_list
 
 renter_results = (
     acs_data[(acs_data['geoid'] == st.session_state['geoid']) &
-             (acs_data['title'] == 'GROSS RENT')]
+             (acs_data['title'] == 'CONTRACT RENT')]
     .loc[:, ["range_min", "range_max", "estimate"]]
 )
 
@@ -386,7 +438,6 @@ renter_results = pd.pivot_table(
 inflation_rate = 0.10
 rand_list = [0] * len(renter_results.index)
 for idx, row in owner_results.iterrows():
-    uniform_random_price = []
     row_index = owner_max_prices.index(row['range_max'])
     for i in range(0, int(row['estimate'])):
         x = random.randint(row['range_min'], row['range_max'])
@@ -399,17 +450,30 @@ for idx, row in owner_results.iterrows():
         else:
             rand_list[row_index] = rand_list[row_index]+1
 
-renter_results['estimate_inflated'] = rand_list
+renter_results['Occupied Units (Inflation Adjusted)'] = rand_list
 
 
 owner_results["Available Units"] = round(
-    owner_results["estimate"] * st.session_state["sale_availability_rate"]
+    owner_results['Occupied Units (Inflation Adjusted)'] * st.session_state["sale_availability_rate"]
 )
 renter_results["Available Units"] = round(
-    renter_results["estimate"] * st.session_state["rental_availability_rate"]
+    renter_results['Occupied Units (Inflation Adjusted)'] * st.session_state["rental_availability_rate"]
 )
 
-# 800 rental side, 200,000 ownership bucket
+
+property_tax = st.session_state["property_tax"]
+
+insurance = st.session_state["insurance"]
+
+A = ((st.session_state["median_income_selection"])*.3) - property_tax - insurance
+
+d = 1 - st.session_state['down_payment']
+
+r = st.session_state["interest_rate"]
+
+n = st.session_state["mortgage_term"]
+
+max_affordable_price = round((A - A * (r + 1)**(-n))/(d*r))
 
 owner_results["Percent of Units Affordable"] = 0
 for idx, rows in owner_results.iterrows():
@@ -489,7 +553,7 @@ with st.container():
             value=f"${st.session_state['median_income_selection']:,}",
         )
         st.caption(
-            "This median income selection was calcualted based on the your choices above"
+            "This median income selection was calculated based on your choices above."
         )
 
     col1a, col1b, col1c = st.columns(3, gap="large")
@@ -504,6 +568,17 @@ with st.container():
             label="Three Year Cycle Goal",
             value=f"{round(total_affordable_units*0.09):,}",
         )
+
+'''
+View additonal context and details on these results by clicking on the
+expanders below. You can save your selections and results to revisit them later
+by bookmarking this page, and you can share them by copying the URL in the address
+bar and pasting it into an email or chat.
+Data regarding estimated rents, home values, and unit availability
+rates was obtained from the U.S. Census Bureau American Community Survey
+as 5-year averages from 2017 to 2021. This is the most recently available
+data and can be regarded as from roughly 2019.
+'''
 
 with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
     st.write(
@@ -539,30 +614,42 @@ with st.expander("Income Limits and Max Prices/Rates Based on Your Selections"):
             + " x "
             + f"{st.session_state['rental_availability_rate']:}",
         )
+        st.caption("Included: mortgage principal, interest, homeowners insurance, and property taxes.")
+        st.caption("Excluded: utilities payments of any kind, HOA fees, and lot rents for mobile homes.")
 
     with col6:
         st.metric(
             label="Max Affordable Rent",
             value=f"${max_affordable_rent:,}",
-            help="Renter Income Limit of ("
+            help="Maximum Rent of ("
             + f"${renter_income_limit:,}"
             + "/12) x 0.3",
         )
+        st.caption("Included: rental payments.")
+        st.caption("Excluded: utilities payments of any kind.")
 
 owner_export = owner_results[
-    ["Range", "Occupied Units", 'estimate_inflated',"Available Units", "Affordable Units"]
+    ["Range", "Occupied Units", 'Occupied Units (Inflation Adjusted)',"Available Units", "Affordable Units"]
 ]
+
+owner_export.loc['Total'] = owner_export[["Occupied Units",'Occupied Units (Inflation Adjusted)', "Available Units", "Affordable Units"]].sum()
 
 renter_export = renter_results[
-    ["Range", "Occupied Units",'estimate_inflated', "Available Units", "Affordable Units"]
+    ["Range", "Occupied Units",'Occupied Units (Inflation Adjusted)', "Available Units", "Affordable Units"]
 ]
 
+renter_export.loc['Total'] = renter_export[["Occupied Units",'Occupied Units (Inflation Adjusted)', "Available Units", "Affordable Units"]].sum()
+
 with st.expander("Housing Affordability by Range"):
-    tab1, tab2 = st.tabs(["For-Sale Table", "Rental Table"])
-    with tab1:
-        st.dataframe(owner_export)
-    with tab2:
-        st.dataframe(renter_export)
+    tab2a, tab2b = st.tabs(["For-Sale Table", "Rental Table"])
+    with tab2a:
+        st.dataframe(owner_export,
+                     height=425)
+        st.caption('Source: U.S. Census Bureau (2022). Table B25075: Value, 2017-2021 American Community Survey 5-year estimates.')
+    with tab2b:
+        st.dataframe(renter_export,
+                     height=425)
+        st.caption('Source: U.S. Census Bureau (2022). Table B25056: Contract Rent, 2017-2021 American Community Survey 5-year estimates.')
 
 buffer = io.BytesIO()
 
