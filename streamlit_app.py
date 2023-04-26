@@ -346,9 +346,9 @@ with st.container():
             help="The percent of home-ownership stock expected to be sold over the commitment period.",
             format="%f%%",
         )   
-        st.caption('''Only for-sale homes that can be purchased over the commitment period by a household at 100% of the median income are considered as affordable.
-                   The American Community Survey does not provide data on home sales, but it does provide data on moves into owner-occupied stock so owner occupied housing stock.
-                   Roughly 21% of homeowners in Colorado moved into their home in a three year period, and this value is provided as the default.''')
+        st.caption('''Only for-sale homes that can be purchased over the commitment period by a household at 100% of the median income are considered affordable.
+                   The American Community Survey does not provide data on home sales, but it does provide data on moves into owner-occupied stock housing stock.
+                   Roughly 21% of homeowners in Colorado moved into their home from 2019 to 2021, which is provided as the devault value above.''')
         if "sale_availability_rate" not in st.session_state:
             st.session_state[
                 "sale_availability_rate"
@@ -445,9 +445,11 @@ renter_results = pd.pivot_table(
     renter_results, values="estimate", index=["range_max", "range_min"], aggfunc=sum
 ).reset_index()
 
+owner_max_prices = owner_results["range_max"].to_list()
+
 rand_list = [0] * len(renter_results.index)
-for idx, row in owner_results.iterrows():
-    row_index = owner_max_prices.index(row["range_max"])
+for idx, row in renter_results.iterrows():
+    row_index = renter_results.index(row["range_max"])
     for i in range(0, int(row["estimate"])):
         x = random.randint(row["range_min"], row["range_max"])
         x = x * (1 + inflation_rate)
