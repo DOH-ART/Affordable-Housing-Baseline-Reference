@@ -445,7 +445,7 @@ renter_results = pd.pivot_table(
     renter_results, values="estimate", index=["range_max", "range_min"], aggfunc=sum
 ).reset_index()
 
-owner_max_prices = owner_results["range_max"].to_list()
+renter_max_prices = renter_results["range_max"].to_list()
 
 rand_list = [0] * len(renter_results.index)
 for idx, row in renter_results.iterrows():
