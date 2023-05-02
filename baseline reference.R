@@ -13,10 +13,11 @@ source('./functions/read_acs.R')
 source('./functions/county_ami.R')
 
 
+
 end_year = 2021
 n_year = 5
 
-selected_tables <- c('b25063', 'b25075', 'b25038')
+selected_tables <- c('b250562', 'b25075', 'b25038')
 
 selected_summary_levels <- c('055', '162')
 
@@ -27,9 +28,9 @@ acs_dl <- read_acs(table_name = selected_tables,
                    summary_levels = selected_summary_levels,
                    excluded_cols = c('sumlevel',
                                       'universe')) %>%
-           filter(!measure_id %in% c('B25063_027',
-                                     'B25063_001',
-                                     'B25063_002',
+           filter(!measure_id %in% c('B25056_027',
+                                     'B25056_001',
+                                     'B25056_002',
                                      'B25038_001',
                                      'B25038_002',
                                      'B25038_009',
