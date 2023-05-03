@@ -449,7 +449,7 @@ renter_max_prices = renter_results["range_max"].to_list()
 
 rand_list = [0] * len(renter_results.index)
 for idx, row in renter_results.iterrows():
-    row_index = renter_results.index(row["range_max"])
+    row_index = renter_max_prices.index(row["range_max"])
     for i in range(0, int(row["estimate"])):
         x = random.randint(row["range_min"], row["range_max"])
         x = x * (1 + inflation_rate)
