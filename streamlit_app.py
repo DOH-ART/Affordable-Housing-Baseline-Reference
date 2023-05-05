@@ -6,7 +6,7 @@ import io
 import random
 
 st.set_page_config(
-    layout="centered",
+    layout="wide",
     menu_items={
         "Report a Bug": "https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/b44faba8"
     },
