@@ -259,10 +259,9 @@ with st.container():
             .loc[:, "il_type"]
             .drop_duplicates()
             .to_list()
-            .sort()
         )
 
-        adjacency_options.insert(0, "")
+        adjacency_options.sort().insert(0, "")
 
         try:
             if st.session_state["income_limit_type"] == "State Median Income":
