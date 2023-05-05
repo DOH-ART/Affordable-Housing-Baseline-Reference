@@ -688,9 +688,9 @@ bar and pasting it into an email or chat. Click the button below to download you
 results as a spreadsheet.
 """
 
-with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+with pd.ExcelWriter(buffer) as writer:
     # Write each dataframe to a different worksheet.
-    owner_export.style.to_excel(writer, sheet_name="For-Sale Table", index=False)
+    owner_export.to_excel(writer, sheet_name="For-Sale Table", index=False)
     renter_export.to_excel(writer, sheet_name="Rental Table", index=False)
 
     # Close the Pandas Excel writer and output the Excel file to the buffer
