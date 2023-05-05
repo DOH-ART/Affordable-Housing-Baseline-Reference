@@ -12,9 +12,6 @@ st.set_page_config(
     },
 )
 st.image("https://cdola.colorado.gov/sites/dola/files/logo.svg")
-st.write(
-    "[Submit Feedback](https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/e6a34351?os_authType=none)"
-)
 st.title("Baseline Assistance Tool")
 
 tab1a, tab1b, tab1c = st.tabs(["Overview", "Definitions", "Help"])
