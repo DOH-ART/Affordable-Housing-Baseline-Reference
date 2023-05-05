@@ -259,6 +259,7 @@ with st.container():
             .loc[:, "il_type"]
             .drop_duplicates()
             .to_list()
+            .sort()
         )
 
         adjacency_options.insert(0, "")
