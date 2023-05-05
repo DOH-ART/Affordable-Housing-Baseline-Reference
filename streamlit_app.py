@@ -694,7 +694,7 @@ with pd.ExcelWriter(buffer) as writer:
     renter_export.to_excel(writer, sheet_name="Rental Table", index=False)
 
     # Close the Pandas Excel writer and output the Excel file to the buffer
-    writer.save()
+    writer.close()
 
     st.download_button(
         label="Download Your Baseline Results",
