@@ -337,7 +337,7 @@ with st.container():
             "Sale Unit Availability Rate",
             0.0,
             100.0,
-            round(ownership_unit_availability_rate_default, 2) * 100,
+            21.0,
             0.1,
             key="sale_availability_rate",
             help="The percent of home-ownership stock expected to be sold over the commitment period.",
@@ -345,7 +345,7 @@ with st.container():
         )   
         st.caption('''Only for-sale homes that can be purchased over the commitment period by a household at 100% of the median income are considered affordable.
                    The American Community Survey does not provide data on home sales, but it does provide data on moves into owner-occupied stock housing stock.
-                   Roughly 21% of homeowners in Colorado moved into their home from 2019 to 2021, which is provided as the devault value above.''')
+                   Roughly 21% of homeowners in Colorado moved into their home from 2019 to 2021, which is provided as the default value above.''')
         if "sale_availability_rate" not in st.session_state:
             st.session_state[
                 "sale_availability_rate"
