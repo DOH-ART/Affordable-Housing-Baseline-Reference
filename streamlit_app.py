@@ -261,7 +261,7 @@ with st.container():
             .to_list()
         )
 
-        adjacency_options.sort().insert(0, "")
+        sorted(adjacency_options).insert(0, "")
 
         try:
             if st.session_state["income_limit_type"] == "State Median Income":
