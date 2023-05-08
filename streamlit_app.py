@@ -6,15 +6,12 @@ import io
 import random
 
 st.set_page_config(
-    layout="centered",
+    layout="wide",
     menu_items={
         "Report a Bug": "https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/b44faba8"
     },
 )
 st.image("https://cdola.colorado.gov/sites/dola/files/logo.svg")
-st.write(
-    "[Submit Feedback](https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/e6a34351?os_authType=none)"
-)
 st.title("Baseline Assistance Tool")
 
 tab1a, tab1b, tab1c = st.tabs(["Overview", "Definitions", "Help"])
@@ -264,7 +261,7 @@ with st.container():
             .to_list()
         )
 
-        adjacency_options.insert(0, "")
+        sorted(adjacency_options).insert(0, "")
 
         try:
             if st.session_state["income_limit_type"] == "State Median Income":
@@ -340,7 +337,7 @@ with st.container():
             "Sale Unit Availability Rate",
             0.0,
             100.0,
-            round(ownership_unit_availability_rate_default, 2) * 100,
+            21.0,
             0.1,
             key="sale_availability_rate",
             help="The percent of home-ownership stock expected to be sold over the commitment period.",
@@ -348,7 +345,7 @@ with st.container():
         )   
         st.caption('''Only for-sale homes that can be purchased over the commitment period by a household at 100% of the median income are considered affordable.
                    The American Community Survey does not provide data on home sales, but it does provide data on moves into owner-occupied stock housing stock.
-                   Roughly 21% of homeowners in Colorado moved into their home from 2019 to 2021, which is provided as the devault value above.''')
+                   Roughly 21% of homeowners in Colorado moved into their home from 2019 to 2021, which is provided as the default value above.''')
         if "sale_availability_rate" not in st.session_state:
             st.session_state[
                 "sale_availability_rate"
@@ -691,13 +688,13 @@ bar and pasting it into an email or chat. Click the button below to download you
 results as a spreadsheet.
 """
 
-with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+with pd.ExcelWriter(buffer) as writer:
     # Write each dataframe to a different worksheet.
-    owner_export.style.to_excel(writer, sheet_name="For-Sale Table", index=False)
+    owner_export.to_excel(writer, sheet_name="For-Sale Table", index=False)
     renter_export.to_excel(writer, sheet_name="Rental Table", index=False)
 
     # Close the Pandas Excel writer and output the Excel file to the buffer
-    writer.save()
+    writer.close()
 
     st.download_button(
         label="Download Your Baseline Results",
