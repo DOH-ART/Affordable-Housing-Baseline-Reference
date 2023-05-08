@@ -678,7 +678,7 @@ with pd.ExcelWriter(buffer) as writer:
 
 
     # Close the Pandas Excel writer and output the Excel file to the buffer
-    writer.save()
+    writer.close()
 
     st.download_button(
         label="Download Your Baseline Results",
