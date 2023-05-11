@@ -123,9 +123,13 @@ params_in = st.experimental_get_query_params()
 
 
 if len(params_in) > 0 and len(st.session_state) == 0:
-    params_dict = loads(params_in.get("query").pop())
-    for key in list(params_dict.keys()):
-        st.session_state[key] = params_dict[key]
+    try:
+        params_dict = loads(params_in.get("query").pop())
+        for key in list(params_dict.keys()):
+            st.session_state[key] = params_dict[key]
+    except AttributeError:
+        print('Session has unexpected URL components, clearing URL.')
+        st.experimental_set_query_params(query='')
 
 
 def selection_callback(key):
