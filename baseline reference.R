@@ -17,7 +17,7 @@ source('./functions/county_ami.R')
 end_year = 2021
 n_year = 5
 
-selected_tables <- c('b250562', 'b25075', 'b25038')
+selected_tables <- c('b25056', 'b25075', 'b25038')
 
 selected_summary_levels <- c('055', '162')
 
@@ -50,7 +50,7 @@ acs_own <- acs_dl %>%
   select(geoid,geography_name,title,range_min,range_max,estimate,margin_of_error)
 
 acs_rent <- acs_dl %>%
-  filter(title == 'GROSS RENT') %>%
+  filter(title == 'CONTRACT RENT') %>%
   mutate(range = case_when(
     str_detect(label, 'Less than') ~ str_replace(label, 'Less than', '$0 to'),
     str_detect(label, 'or more')  ~ str_replace(label, 'or more', 'to $6,000'),
@@ -128,15 +128,20 @@ income_limits_hud <- unique(pull(locality_adjacency,county_neighbor)) %>%
 amis_adjacency <- locality_adjacency %>%
     mutate(county_name = str_remove(county_name, ', CO')) %>% 
     left_join(income_limits_hud, by = c('county_neighbor'='geoid'),multiple = "all") %>%
-    mutate(income_limit_text = as.character(income_limit)) %>%
     group_by(geoid,county,il_name,il_year,il_hh_size,income_limit) %>%
     summarise(county_concat = str_c(county_name, collapse = ', '),
               county_id_concat = str_c(county_neighbor, collapse = ' ')) %>%
     ungroup() %>% 
     rowwise() %>% 
+  mutate(il_type = if_else(str_detect(county_id_concat,county),
+                           'Own AMI',
+                           'Neighboring AMI')) %>%
+  group_by(geoid,il_name,il_year,il_hh_size,income_limit, il_type) %>%
+  filter(nchar(county_id_concat) == max(nchar(county_id_concat))) %>%
+  ungroup() %>%
     mutate(il_type = if_else(str_detect(county_id_concat,county),
-                             paste0('Own AMI - ', county_concat),
-        paste0('Neighboring AMI - ', str_c(county_concat, sep = ', ')))) %>%
+                             paste0(il_type,' - ', county_concat),
+        paste0(il_type,' - ', str_c(county_concat, sep = ', ')))) %>%
     ungroup() %>%
     select(geoid, il_name, il_year,il_hh_size, il_type, income_limit) %>%
     distinct()
@@ -218,11 +223,7 @@ baseline <- results %>%
 
 write_csv(baseline,'ACS Baseline Options.csv')
 
-write_csv(income_limits_flat,'income_limits.csv')
-
 write_feather(income_limits_flat,'income_limits.feather')
-
-write_csv(results_acs,'acs.csv')
 
 write_feather(results_acs,'acs.feather')
 

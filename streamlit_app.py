@@ -6,15 +6,12 @@ import io
 import random
 
 st.set_page_config(
-    layout="centered",
+    layout="wide",
     menu_items={
         "Report a Bug": "https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/b44faba8"
     },
 )
 st.image("https://cdola.colorado.gov/sites/dola/files/logo.svg")
-st.write(
-    "[Submit Feedback](https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/e6a34351?os_authType=none)"
-)
 st.title("Baseline Assistance Tool")
 
 tab1a, tab1b, tab1c = st.tabs(["Overview", "Definitions", "Help"])
@@ -76,24 +73,12 @@ except KeyError:
         "An analysis of affordable housing stock will be shown below once the selections in the sidebar are complete."
     )
 
-acs_data_url = "./acs.csv"
-income_data_url = "./income_limits.csv"
-inflation_data_url = "./InflationRates.csv"
-
+acs_data_url = "./acs.feather"
+income_data_url = "./income_limits.feather"
 
 def load_data(data_url):
-    data = pd.read_csv(
-        data_url,
-        dtype={
-            "geoid": "object",
-            "geography_name": "object",
-            "title": "object",
-            "range_min": "float64",
-            "range_max": "float64",
-            "estimate": "float64",
-            "margin_of_error": "float64",
-            "proration_available_units": "float64",
-        },
+    data = pd.read_feather(
+        data_url
     )
     lowercase = lambda x: str(x).lower()
     data.rename(lowercase, axis="columns", inplace=True)
@@ -102,7 +87,6 @@ def load_data(data_url):
 
 acs_data = load_data(acs_data_url)
 income_data = load_data(income_data_url)
-inflation_data = load_data(inflation_data_url)
 
 acs_data["geography_name"] = acs_data["geography_name"].astype(str)
 
@@ -139,9 +123,13 @@ params_in = st.experimental_get_query_params()
 
 
 if len(params_in) > 0 and len(st.session_state) == 0:
-    params_dict = loads(params_in.get("query").pop())
-    for key in list(params_dict.keys()):
-        st.session_state[key] = params_dict[key]
+    try:
+        params_dict = loads(params_in.get("query").pop())
+        for key in list(params_dict.keys()):
+            st.session_state[key] = params_dict[key]
+    except AttributeError:
+        print('Session has unexpected URL components, clearing URL.')
+        st.experimental_set_query_params(query='')
 
 
 def selection_callback(key):
@@ -253,11 +241,12 @@ with st.container():
                 st.stop()
         except KeyError:
             st.stop()
-
+    
         adjacency_options = (
             income_data[
                 (income_data["geoid"] == st.session_state["geoid"])
                 & (income_data["il_name"] == st.session_state["income_limit_type"])
+                & (income_data["il_year"] == st.session_state["year"])
             ]
             .loc[:, "il_type"]
             .drop_duplicates()
@@ -326,21 +315,12 @@ with st.container():
         selection_callback("median_income_selection")
 
     with st.expander("Economic Variables", expanded=True):
-        ownership_unit_availability_rate_default = (
-            acs_data[
-                (acs_data["geoid"] == st.session_state["geoid"])
-                & (acs_data["title"] == "VALUE")
-            ]
-            .loc[:, "proration_available_units"]
-            .drop_duplicates()
-            .to_list()
-            .pop()
-        )
+        st.write('The data collected by the U.S. Census Bureau may have limitations that could prevent it from better illustrating the baseline amount of affordable housing within your jurisdiction. Adjust these economic variables as appropriate to harmonize the data with current economic conditions and the statutory requirements on baseline definitions.')
         st.slider(
             "Sale Unit Availability Rate",
             0.0,
             100.0,
-            round(ownership_unit_availability_rate_default, 2) * 100,
+            21.0,
             0.1,
             key="sale_availability_rate",
             help="The percent of home-ownership stock expected to be sold over the commitment period.",
@@ -356,13 +336,14 @@ with st.container():
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
 
         st.slider(
-            "Inflation Rate", 0.0, 50.0, 0.0, 0.1, key="inflation_rate", format="%f%%"
+            "Inflation Rate", 0.0, 100.0, 0.0, 0.1, key="inflation_rate", format="%f%%"
         )
         if "inflation_rate" not in st.session_state:
             st.session_state["inflation_rate"] = 0.1
         st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
-        st.caption('Adjust prices of apartments and for-sale stock to bring data in line with current market conditions.')
+        st.caption('Adjust the prices of apartments and for-sale stock to correct for price increases caused by inflation. Moving this slider will calculate the movement of units between cost brackets using statistics based on your selection.')
     with st.expander("Homebuyer Variables", expanded=True):
+        st.write('Adjust these homebuyer variables to change the price of an affordable for-sale home based on appropriate factors in your jurisdiction. Your choices will be used to calculate the maximum mortgage payment that is affordable at 100% of the median income.')
         st.slider(
             "Mortgage Interest Rate",
             0.0,
@@ -440,16 +421,15 @@ renter_results = acs_data[
 
 renter_results["range_max"][renter_results["range_max"] < 800] = 799
 renter_results["range_min"][renter_results["range_max"] < 800] = 0
-
 renter_results = pd.pivot_table(
     renter_results, values="estimate", index=["range_max", "range_min"], aggfunc=sum
 ).reset_index()
 
-owner_max_prices = owner_results["range_max"].to_list()
+renter_max_prices = renter_results["range_max"].to_list()
 
 rand_list = [0] * len(renter_results.index)
 for idx, row in renter_results.iterrows():
-    row_index = renter_results.index(row["range_max"])
+    row_index = renter_max_prices.index(row["range_max"])
     for i in range(0, int(row["estimate"])):
         x = random.randint(row["range_min"], row["range_max"])
         x = x * (1 + inflation_rate)
@@ -563,7 +543,7 @@ with st.container():
 
         st.metric(
             label="Selected Median income",
-            value=f"${st.session_state['median_income_selection']:,}",
+            value=f"${round(st.session_state['median_income_selection']):,}",
         )
         st.caption(
             "This median income selection was calculated based on your choices above."
@@ -593,7 +573,7 @@ with st.expander(
     with col3:
         st.metric(
             label="Homeowner/Homebuyer Income Limit",
-            value=f"${owner_income_limit:,}",
+            value=f"${round(owner_income_limit):,}",
             help="Your selected Median Income of "
             f"${st.session_state['median_income_selection']:,}" + " x 1.0",
         )
@@ -601,7 +581,7 @@ with st.expander(
     with col4:
         st.metric(
             label="Renter Income Limit",
-            value=f"${renter_income_limit:,}",
+            value=f"${round(renter_income_limit):,}",
             help="Your selected Median Income of "
             f"${st.session_state['median_income_selection']:,}" + " x 0.6",
         )
@@ -682,6 +662,9 @@ with st.expander("Housing Affordability by Range", expanded=True):
             "Source: U.S. Census Bureau (2022). Table B25056: Contract Rent, 2017-2021 American Community Survey 5-year estimates."
         )
 
+state_export = pd.DataFrame(list(st.session_state.to_dict().values()),
+                            index = list(st.session_state.to_dict().keys()),
+                                              columns =['Selection'])
 buffer = io.BytesIO()
 
 """
@@ -691,13 +674,15 @@ bar and pasting it into an email or chat. Click the button below to download you
 results as a spreadsheet.
 """
 
-with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+with pd.ExcelWriter(buffer) as writer:
     # Write each dataframe to a different worksheet.
     owner_export.style.to_excel(writer, sheet_name="For-Sale Table", index=False)
     renter_export.to_excel(writer, sheet_name="Rental Table", index=False)
+    state_export.to_excel(writer, sheet_name="Selections", index=True)
+
 
     # Close the Pandas Excel writer and output the Excel file to the buffer
-    writer.save()
+    writer.close()
 
     st.download_button(
         label="Download Your Baseline Results",
