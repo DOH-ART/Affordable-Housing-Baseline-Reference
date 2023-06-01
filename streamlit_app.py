@@ -476,7 +476,7 @@ for idx, rows in owner_results.iterrows():
         and rows["range_max"] >= max_affordable_price
     ):
         owner_results.at[idx, "Percent of Units Affordable"] = (
-            max_affordable_price / rows["range_max"]
+            (max_affordable_price - rows["range_min"]) / (rows["range_max"] - rows["range_min"])
         )
     else:
         owner_results.at[idx, "Percent of Units Affordable"] = 0
@@ -491,7 +491,7 @@ for idx, rows in renter_results.iterrows():
         and rows["range_max"] >= max_affordable_rent
     ):
         renter_results.at[idx, "Percent of Units Affordable"] = (
-            max_affordable_rent / rows["range_max"]
+            (max_affordable_rent - rows["range_min"]) / (rows["range_max"] - rows["range_min"])
         )
     else:
         renter_results.at[idx, "Percent of Units Affordable"] = 0
