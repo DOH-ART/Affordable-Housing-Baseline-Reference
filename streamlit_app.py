@@ -75,6 +75,7 @@ except KeyError:
 
 acs_data_url = "./acs.feather"
 income_data_url = "./income_limits.feather"
+Ute_data_url = "./Example Baseline - Southern Ute Reservation"
 
 def load_data(data_url):
     data = pd.read_feather(
@@ -87,6 +88,7 @@ def load_data(data_url):
 
 acs_data = load_data(acs_data_url)
 income_data = load_data(income_data_url)
+Ute_data = load_data(Ute_data_url)
 
 acs_data["geography_name"] = acs_data["geography_name"].astype(str)
 
@@ -156,7 +158,7 @@ with st.container():
 
         st.selectbox(
             "Step 1: Select a jurisdiction type",
-            ["", "County", "Municipality"],
+            ["", "County", "Municipality",'Tribal'],
             key="jurisdiction_type",
             on_change=selection_callback("jurisdiction_type"),
         )
