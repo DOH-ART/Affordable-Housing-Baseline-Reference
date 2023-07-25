@@ -75,7 +75,6 @@ except KeyError:
 
 acs_data_url = "./acs.feather"
 income_data_url = "./income_limits.feather"
-Ute_data_url = "./Example Baseline - Southern Ute Reservation"
 
 def load_data(data_url):
     data = pd.read_feather(
@@ -88,7 +87,6 @@ def load_data(data_url):
 
 acs_data = load_data(acs_data_url)
 income_data = load_data(income_data_url)
-Ute_data = load_data(Ute_data_url)
 
 acs_data["geography_name"] = acs_data["geography_name"].astype(str)
 
@@ -105,6 +103,14 @@ county_options = (
 municipality_options = (
     acs_data.query('not geography_name.str.contains("Unincorporated")')
     .query('not geography_name == "nan"')
+    .loc[:, "geography_name"]
+    .drop_duplicates()
+    .dropna()
+    .to_list()
+)
+
+tribal_options = (
+    acs_data.query('geography_name.str.contains("Reservation")')
     .loc[:, "geography_name"]
     .drop_duplicates()
     .dropna()
