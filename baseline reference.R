@@ -19,7 +19,7 @@ n_year = 5
 
 selected_tables <- c('b25056', 'b25075', 'b25038')
 
-selected_summary_levels <- c('055', '162')
+selected_summary_levels <- c('055', '162','252')
 
 
 acs_dl <- read_acs(table_name = selected_tables,

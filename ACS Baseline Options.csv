@@ -166,6 +166,10 @@ Campo Town,"Neighboring AMI - Cimarron County, OK",9,1,1
 Campo Town,"Neighboring AMI - Morton County, KS, Stanton County, KS",9,1,1
 Campo Town,"Neighboring AMI - Union County, NM",9,1,1
 Campo Town,"Own AMI - Baca County, Bent County, Las Animas County, Prowers County",10,1,1
+Cañon City City,Neighboring AMI - El Paso County,1050,95,32
+Cañon City City,Neighboring AMI - Park County,1328,120,40
+Cañon City City,Neighboring AMI - Teller County,1052,95,32
+Cañon City City,"Own AMI - Chaffee County, Custer County, Fremont County, Pueblo County, Saguache County",1055,95,32
 Carbonate Town,Neighboring AMI - Eagle County,NA,NA,NA
 Carbonate Town,"Neighboring AMI - Grand County, UT",NA,NA,NA
 Carbonate Town,Neighboring AMI - Mesa County,NA,NA,NA
@@ -188,10 +192,6 @@ Castle Pines City,"Own AMI - Arapahoe County, Douglas County, Elbert County, Jef
 Castle Rock Town,Neighboring AMI - El Paso County,431,39,13
 Castle Rock Town,Neighboring AMI - Teller County,433,39,13
 Castle Rock Town,"Own AMI - Arapahoe County, Douglas County, Elbert County, Jefferson County",1173,106,36
-Cañon City City,Neighboring AMI - El Paso County,1050,95,32
-Cañon City City,Neighboring AMI - Park County,1328,120,40
-Cañon City City,Neighboring AMI - Teller County,1052,95,32
-Cañon City City,"Own AMI - Chaffee County, Custer County, Fremont County, Pueblo County, Saguache County",1055,95,32
 Cedaredge Town,Neighboring AMI - Gunnison County,178,17,6
 Cedaredge Town,"Own AMI - Delta County, Mesa County, Montrose County",178,17,6
 Centennial City,"Neighboring AMI - Lincoln County, Washington County",400,36,12

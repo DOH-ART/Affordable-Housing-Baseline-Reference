@@ -41,7 +41,11 @@ data_geo %>%
                                                  TRUE ~ geography_name)
                      )
                                
-                     
+data_geo_w_reservation <-
+  data_geo %>%  
+  filter(sumlevel=='250',
+         str_detect(geography_name,'CO'))
+               
                  
 
 

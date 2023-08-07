@@ -89,7 +89,7 @@ acs_data = load_data(acs_data_url)
 income_data = load_data(income_data_url)
 
 acs_data["geography_name"] = acs_data["geography_name"].astype(str)
-
+st.write(acs_data)
 county_options = (
     acs_data.query('geography_name.str.contains("Unincorporated")')
     .query('not geoid == "0550000US08014"')
@@ -118,7 +118,7 @@ tribal_options = (
 )
 
 jursidiction_options = dict(
-    County=[""] + county_options, Municipality=[""] + municipality_options, space=""
+    County=[""] + county_options, Municipality=[""] + municipality_options, Tribal=[""] + tribal_options, space=""
 )
 
 income_limit_name_options = income_data["il_name"].drop_duplicates().to_list()
