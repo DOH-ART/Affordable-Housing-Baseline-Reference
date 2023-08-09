@@ -1237,6 +1237,9 @@ Snowmass Village Town,Neighboring AMI - Garfield County,8,1,1
 Snowmass Village Town,Neighboring AMI - Gunnison County,9,1,1
 Snowmass Village Town,Own AMI - Pitkin County,48,5,2
 South Fork Town,"Own AMI - Alamosa County, Archuleta County, Conejos County, Mineral County, Rio Grande County, Saguache County",23,3,1
+"Southern Ute Reservation, Co","Neighboring AMI - Archuleta County, Dolores County, Hinsdale County, Montezuma County, San Juan County",622,56,19
+"Southern Ute Reservation, Co","Neighboring AMI - San Juan County, NM",468,43,15
+"Southern Ute Reservation, Co",Own AMI - La Plata County,854,77,26
 Springfield Town,"Neighboring AMI - Cimarron County, OK",112,11,4
 Springfield Town,"Neighboring AMI - Morton County, KS, Stanton County, KS",111,10,4
 Springfield Town,"Neighboring AMI - Union County, NM",101,10,4
@@ -1312,6 +1315,11 @@ Two Buttes Town,"Neighboring AMI - Cimarron County, OK",0,0,0
 Two Buttes Town,"Neighboring AMI - Morton County, KS, Stanton County, KS",0,0,0
 Two Buttes Town,"Neighboring AMI - Union County, NM",0,0,0
 Two Buttes Town,"Own AMI - Baca County, Bent County, Las Animas County, Prowers County",0,0,0
+"Ute Mountain Reservation And Off-Reservation Trust Land, Co--Nm--Ut","Neighboring AMI - Apache County, AZ",18,2,1
+"Ute Mountain Reservation And Off-Reservation Trust Land, Co--Nm--Ut",Neighboring AMI - La Plata County,32,3,1
+"Ute Mountain Reservation And Off-Reservation Trust Land, Co--Nm--Ut","Neighboring AMI - San Juan County, NM",28,3,1
+"Ute Mountain Reservation And Off-Reservation Trust Land, Co--Nm--Ut","Neighboring AMI - San Juan County, UT",30,3,1
+"Ute Mountain Reservation And Off-Reservation Trust Land, Co--Nm--Ut","Own AMI - Dolores County, Montezuma County, San Juan County",30,3,1
 Vail Town,Neighboring AMI - Garfield County,31,3,1
 Vail Town,Neighboring AMI - Grand County,31,3,1
 Vail Town,Neighboring AMI - Lake County,31,3,1

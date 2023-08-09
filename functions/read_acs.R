@@ -74,7 +74,7 @@ read_acs <- function(table_name,
     url_acs %>%
     map_dfr(
       ~ read_delim(.) %>%
-        filter(str_sub(GEO_ID, 10, 11) == '39') %>%
+        filter(str_sub(GEO_ID, 10, 13) %in% c('3925','4470')) %>%
         pivot_longer(!GEO_ID,
                      names_to = 'variable',
                      values_to = 'values') %>%
@@ -117,11 +117,9 @@ read_acs <- function(table_name,
   data_acs_reservation <- 
     data_acs_tribal %>%
     filter(sumlevel == '250',geoid %in% Reservation) %>%
-    mutate(sumlevel = '252',
-    geoid = paste0(sumlevel, str_sub(geoid, 4)))
+    mutate(geoid = paste0(sumlevel, str_sub(geoid, 4)))
   
-  data_acs_uninc_munis <- bind_rows(data_acs,
-                                    data_acs_uninc,
+  data_acs_uninc_munis <- bind_rows(data_acs_uninc,
                                     data_acs_munis,
                                     data_acs_reservation)
   

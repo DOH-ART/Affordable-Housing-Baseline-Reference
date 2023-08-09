@@ -19,7 +19,7 @@ n_year = 5
 
 selected_tables <- c('b25056', 'b25075', 'b25038')
 
-selected_summary_levels <- c('055', '162','252')
+selected_summary_levels <- c('055', '162','250')
 
 
 acs_dl <- read_acs(table_name = selected_tables,
@@ -103,6 +103,13 @@ geos_place_remainders <- geos_dl %>%
 geos_munis <- geos_dl %>%
     filter(sumlevel == '162')
 
+geos_reservations <- geos_dl %>%
+  filter(sumlevel == '250',
+         str_detect(geography_name,'CO')) %>%
+  distinct() %>%
+  rowwise()%>%
+  mutate(county = if_else(geography_name=='Southern Ute Reservation, CO', '08067', '08083'))
+
 county_adjacency <-
     read_csv(
         'https://data.nber.org/census/geo/county-adjacency/2010/county_adjacency2010.csv'
@@ -114,7 +121,7 @@ county_adjacency <-
 geos_localities <- left_join(geos_munis,
                              geos_place_remainders,
                              by = 'geoid') %>%
-    bind_rows(geos_counties)
+    bind_rows(geos_counties,geos_reservations)
 
 locality_adjacency <- geos_localities %>%
     select(geoid, geography_name, county) %>%
