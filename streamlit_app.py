@@ -89,7 +89,9 @@ acs_data = load_data(acs_data_url)
 income_data = load_data(income_data_url)
 
 acs_data["geography_name"] = acs_data["geography_name"].astype(str)
+
 st.write(acs_data)
+
 county_options = (
     acs_data.query('geography_name.str.contains("Unincorporated")')
     .query('not geoid == "0550000US08014"')
