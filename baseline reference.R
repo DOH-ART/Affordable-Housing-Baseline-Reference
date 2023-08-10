@@ -161,9 +161,6 @@ state_median_income <- map_dfr(c(2017:2019,2021),
                                                 survey = 'acs1') %>% 
                                transmute(il_year = as.integer(.x),
                                          income_limit = estimate))
-    
-    
-    
 
 localities_state_income <- geos_localities %>% 
     filter(str_sub(geoid,10,11)=='08') %>% 
@@ -176,7 +173,19 @@ localities_state_income <- geos_localities %>%
               il_type = 'State Median Income',
               income_limit)
 
-income_limits_flat <- bind_rows(amis_adjacency,localities_state_income)
+localities_state_income_reservations <- geos_reservations %>% 
+  filter(str_sub(geoid,10,13)%in%c('3925','4470')) %>% 
+  crossing(il_year = as.integer(c(2017:2019,2021))) %>% 
+  left_join(state_median_income, by = 'il_year') %>% 
+  transmute(geoid,
+            il_name = 'State Median Income',
+            il_year,
+            il_hh_size = 0,
+            il_type = 'State Median Income',
+            income_limit)
+
+
+income_limits_flat <- bind_rows(amis_adjacency,localities_state_income,localities_state_income_reservations)
 
 income_limits <- bind_rows(amis_adjacency,localities_state_income) %>% 
     filter(il_year==2021 & il_name == 'State Median Income'|
