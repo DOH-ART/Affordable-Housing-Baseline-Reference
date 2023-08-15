@@ -84,13 +84,12 @@ def load_data(data_url):
     data.rename(lowercase, axis="columns", inplace=True)
     return data
 
-
+#load in data
 acs_data = load_data(acs_data_url)
 income_data = load_data(income_data_url)
 
 acs_data["geography_name"] = acs_data["geography_name"].astype(str)
 
-st.write(acs_data)
 
 county_options = (
     acs_data.query('geography_name.str.contains("Unincorporated")')
@@ -119,8 +118,9 @@ tribal_options = (
     .to_list()
 )
 
+#give options for which jurisdiction
 jursidiction_options = dict(
-    County=[""] + county_options, Municipality=[""] + municipality_options, Tribal=[""] + tribal_options, space=""
+    County=[""] + county_options, Municipality=[""] + municipality_options, Tribe=[""] + tribal_options, space=""
 )
 
 income_limit_name_options = income_data["il_name"].drop_duplicates().to_list()
@@ -141,7 +141,7 @@ if len(params_in) > 0 and len(st.session_state) == 0:
         print('Session has unexpected URL components, clearing URL.')
         st.experimental_set_query_params(query='')
 
-
+#this function allows for the session state to maintain variables
 def selection_callback(key):
     print(st.session_state)
     if len(st.session_state) > 0:
@@ -160,13 +160,13 @@ def selection_callback(key):
     else:
         print("New session")
 
-
+#This container is for holding all the variables that different jurisdictions input 
 with st.container():
     with st.expander("Start here", expanded=True):
 
         st.selectbox(
             "Step 1: Select a jurisdiction type",
-            ["", "County", "Municipality",'Tribal'],
+            ["", "County", "Municipality",'Tribe'],
             key="jurisdiction_type",
             on_change=selection_callback("jurisdiction_type"),
         )
@@ -389,6 +389,7 @@ with st.container():
             "Down Payment", 0.0, 100.0, 5.0, 1.0, key="down_payment", format="%f%%"
         )
 
+#This is where the math from the variables is added to the udnerlying data 
 
 renter_income_limit = round(st.session_state["median_income_selection"] * 0.6)
 owner_income_limit = st.session_state["median_income_selection"]
@@ -477,6 +478,8 @@ n = st.session_state["mortgage_term"]
 
 max_affordable_price = round((A - A * (r + 1) ** (-n)) / (d * r))
 
+#change the units in the range values of the underlying data 
+
 owner_results["Percent of Units Affordable"] = 0
 for idx, rows in owner_results.iterrows():
     if rows["range_max"] <= max_affordable_price:
@@ -507,6 +510,7 @@ for idx, rows in renter_results.iterrows():
         renter_results.at[idx, "Percent of Units Affordable"] = 0
 
 
+#Find the availability of affordable units 
 owner_percent_affordable = sum(
     owner_results["Available Units"][owner_results["range_max"] <= max_affordable_price]
 ) / sum(owner_results["estimate"])
@@ -545,6 +549,7 @@ total_affordable_units = round(
 
 st.header("Results")
 
+#this is the final container that holds the result of the baseline calculations 
 with st.container():
 
     with st.container():
