@@ -47,11 +47,14 @@ data_geo_w_reservation <-
          str_detect(geography_name,'CO'))
                
                  
-
+data_geo_remainder_places <- data_geo %>%
+  filter(sumlevel=='155',
+         str_detect(geoid,'US08'))
 
 results <- bind_rows(data_geo_w_uninc,
                      data_geo_w_muni,
-                     data_geo_w_reservation) %>% 
+                     data_geo_w_reservation,
+                     data_geo_remainder_places) %>% 
   mutate(geography_name = str_remove_all(geography_name,str_c(excluded_suffixes,
                                                                collapse = '|')
                                           )
