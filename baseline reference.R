@@ -19,7 +19,7 @@ n_year = 5
 
 selected_tables <- c('b25056', 'b25075', 'b25038')
 
-selected_summary_levels <- c('055', '162')
+selected_summary_levels <- c('055', '162','250')
 
 
 acs_dl <- read_acs(table_name = selected_tables,
@@ -103,6 +103,13 @@ geos_place_remainders <- geos_dl %>%
 geos_munis <- geos_dl %>%
     filter(sumlevel == '162')
 
+geos_reservations <- geos_dl %>%
+  filter(sumlevel == '250',
+         str_detect(geography_name,'CO')) %>%
+  distinct() %>%
+  rowwise()%>%
+  mutate(county = if_else(geography_name=='Southern Ute Reservation, CO', '08067', '08083'))
+
 county_adjacency <-
     read_csv(
         'https://data.nber.org/census/geo/county-adjacency/2010/county_adjacency2010.csv'
@@ -114,7 +121,7 @@ county_adjacency <-
 geos_localities <- left_join(geos_munis,
                              geos_place_remainders,
                              by = 'geoid') %>%
-    bind_rows(geos_counties)
+    bind_rows(geos_counties,geos_reservations)
 
 locality_adjacency <- geos_localities %>%
     select(geoid, geography_name, county) %>%
@@ -154,9 +161,6 @@ state_median_income <- map_dfr(c(2017:2019,2021),
                                                 survey = 'acs1') %>% 
                                transmute(il_year = as.integer(.x),
                                          income_limit = estimate))
-    
-    
-    
 
 localities_state_income <- geos_localities %>% 
     filter(str_sub(geoid,10,11)=='08') %>% 
@@ -169,7 +173,19 @@ localities_state_income <- geos_localities %>%
               il_type = 'State Median Income',
               income_limit)
 
-income_limits_flat <- bind_rows(amis_adjacency,localities_state_income)
+localities_state_income_reservations <- geos_reservations %>% 
+  filter(str_sub(geoid,10,13)%in%c('3925','4470')) %>% 
+  crossing(il_year = as.integer(c(2017:2019,2021))) %>% 
+  left_join(state_median_income, by = 'il_year') %>% 
+  transmute(geoid,
+            il_name = 'State Median Income',
+            il_year,
+            il_hh_size = 0,
+            il_type = 'State Median Income',
+            income_limit)
+
+
+income_limits_flat <- bind_rows(amis_adjacency,localities_state_income,localities_state_income_reservations)
 
 income_limits <- bind_rows(amis_adjacency,localities_state_income) %>% 
     filter(il_year==2021 & il_name == 'State Median Income'|
