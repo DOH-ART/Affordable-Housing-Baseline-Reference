@@ -49,8 +49,7 @@ data_geo_w_reservation <-
                  
 
 
-results <- bind_rows(data_geo,
-                     data_geo_w_uninc,
+results <- bind_rows(data_geo_w_uninc,
                      data_geo_w_muni,
                      data_geo_w_reservation) %>% 
   mutate(geography_name = str_remove_all(geography_name,str_c(excluded_suffixes,
