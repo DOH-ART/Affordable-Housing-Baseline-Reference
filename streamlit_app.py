@@ -564,7 +564,7 @@ with st.container():
             "This median income selection was calculated based on your choices above."
         )
 
-    col1a, col1b, col1c = st.columns(3, gap="large")
+    col1a, col1b, col1c, col1d, col1e = st.columns(5, gap="large")
     with col1a:
         st.metric(label="Baseline Estimate", value=f"{total_affordable_units:,}")
 
@@ -572,6 +572,15 @@ with st.container():
         st.metric(label="Annual Goal", value=f"{round(total_affordable_units*0.03):,}")
 
     with col1c:
+        st.metric(label="One Year Cycle Goal", value=f"{round(total_affordable_units*0.03):,}")
+
+    with col1d:
+        st.metric(
+            label="Two Year Cycle Goal",
+            value=f"{round(total_affordable_units*0.06):,}",
+        )
+
+    with col1e:
         st.metric(
             label="Three Year Cycle Goal",
             value=f"{round(total_affordable_units*0.09):,}",
