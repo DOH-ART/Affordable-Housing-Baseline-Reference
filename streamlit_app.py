@@ -201,7 +201,7 @@ with st.container():
             "Step 1: Select a jurisdiction type",
             ["", "County", "Municipality",'Tribe'],
             key="jurisdiction_type",
-            on_change=reset_dependent_fields),
+            on_change=reset_dependent_fields
         )
 
         try:
@@ -216,7 +216,7 @@ with st.container():
             key="jurisdiction_name",
             help="Tip: Type in the box to search for a "
             + st.session_state["jurisdiction_type"],
-            on_change=reset_dependent_fields,
+            on_change=reset_dependent_fields
         )
         st.caption(
             "Tip: Type in the box to search for a "
