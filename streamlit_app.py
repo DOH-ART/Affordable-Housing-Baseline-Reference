@@ -532,8 +532,6 @@ renter_results["Affordable Units"] = round(
     renter_results["Percent of Units Affordable"] * renter_results["Available Units"]
 )
 
-----
-
 
 owner_results["Range"] = (
     owner_results["range_min"].map("${:,.0f}".format)
