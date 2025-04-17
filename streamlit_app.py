@@ -129,7 +129,7 @@ income_limit_name_options.insert(0, "")
 # Input widgets for sidebar
 
 
-params_in = st.experimental_get_query_params()
+params_in = st.query_params
 
 
 if len(params_in) > 0 and len(st.session_state) == 0:
@@ -139,28 +139,35 @@ if len(params_in) > 0 and len(st.session_state) == 0:
             st.session_state[key] = params_dict[key]
     except AttributeError:
         print('Session has unexpected URL components, clearing URL.')
-        st.experimental_set_query_params(query='')
+        st.query_params = {}
 
 #this function allows for the session state to maintain variables
 def selection_callback(key):
     print(st.session_state)
     if len(st.session_state) > 0:
-        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        # Update query_params with session state
+        for k, v in st.session_state.to_dict().items():
+            st.query_params[k] = [str(v)] # Update individual query params
         try:
-            params_in = loads(st.experimental_get_query_params().get("query").pop())
-        except AttributeError:
-            print("oops")
+            # get the current params dict
+            params_in = st.query_params
+            # set the session state key from the params dict
+            st.session_state[key] = params_in[key][0]
+        except KeyError:
+            print("oops") # if session state key is not in params, handle the KeyError
     elif ValueError and len(st.session_state) > 0:
         st.session_state[key] == ""
-        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        # replace with this line
+        for k, v in st.session_state.to_dict().items():
+            st.query_params[k] = v  # Update individual query params
         try:
-            st.session_state[key] = params_in[key]
+            st.session_state[key] = params_in[key][0]  # changed line
         except KeyError:
             print("New session")
     else:
         print("New session")
 
-#This container is for holding all the variables that different jurisdictions input 
+#This container is for holding all the variables that different jurisdictions input
 with st.container():
     with st.expander("Start here", expanded=True):
 
@@ -213,7 +220,7 @@ with st.container():
             help="Select one of three Income Limit Types, we suggest Median Family Income because it is simplest, and likely most accurate.",
         )
 
-        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        st.query_params = st.session_state.to_dict()  # replaced here
 
         try:
             if st.session_state["income_limit_type"] == "":
@@ -244,14 +251,14 @@ with st.container():
             + " because it is likely most accurate.",
         )
 
-        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        st.query_params = st.session_state.to_dict()  # replaced here
 
         try:
             if st.session_state["year"] == "":
                 st.stop()
         except KeyError:
             st.stop()
-    
+
         adjacency_options = (
             income_data[
                 (income_data["geoid"] == st.session_state["geoid"])
@@ -278,9 +285,7 @@ with st.container():
                     help="Select the counties that the income limit is taken from, your Own County is likely most appropriate.",
                 )
 
-                st.experimental_set_query_params(
-                    query=dumps(st.session_state.to_dict())
-                )
+                st.query_params = st.session_state.to_dict()  # replaced here
         except KeyError:
             st.stop()
 
@@ -299,7 +304,7 @@ with st.container():
                 key="hh_size",
                 help="The average (rounded) size of households in Colorado is 3, and is likely the most appropriate selection.",
             )
-            st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+            st.query_params = st.session_state.to_dict()  # replaced here
         else:
             st.session_state["hh_size"] = 0
         if (
@@ -335,7 +340,7 @@ with st.container():
             key="sale_availability_rate",
             help="The percent of home-ownership stock expected to be sold over the commitment period.",
             format="%f%%",
-        )   
+        )
         st.caption('''Only for-sale homes that can be purchased over the commitment period by a household at 100% of the median income are considered affordable.
                    The American Community Survey does not provide data on home sales, but it does provide data on moves into owner-occupied stock housing stock.
                    Roughly 21% of homeowners in Colorado moved into their home from 2019 to 2021, which is provided as the devault value above.''')
@@ -343,14 +348,14 @@ with st.container():
             st.session_state[
                 "sale_availability_rate"
             ] = 0.21
-        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        st.query_params = st.session_state.to_dict()  # replaced here
 
         st.slider(
             "Inflation Rate", 0.0, 100.0, 0.0, 0.1, key="inflation_rate", format="%f%%"
         )
         if "inflation_rate" not in st.session_state:
             st.session_state["inflation_rate"] = 0.1
-        st.experimental_set_query_params(query=dumps(st.session_state.to_dict()))
+        st.query_params = st.session_state.to_dict()  # replaced here
         st.caption('Adjust the prices of apartments and for-sale stock to correct for price increases caused by inflation. Moving this slider will calculate the movement of units between cost brackets using statistics based on your selection.')
     with st.expander("Homebuyer Variables", expanded=True):
         st.write('Adjust these homebuyer variables to change the price of an affordable for-sale home based on appropriate factors in your jurisdiction. Your choices will be used to calculate the maximum mortgage payment that is affordable at 100% of the median income.')
@@ -389,7 +394,7 @@ with st.container():
             "Down Payment", 0.0, 100.0, 5.0, 1.0, key="down_payment", format="%f%%"
         )
 
-#This is where the math from the variables is added to the udnerlying data 
+#This is where the math from the variables is added to the udnerlying data
 
 renter_income_limit = round(st.session_state["median_income_selection"] * 0.6)
 owner_income_limit = st.session_state["median_income_selection"]
@@ -478,7 +483,7 @@ n = st.session_state["mortgage_term"]
 
 max_affordable_price = round((A - A * (r + 1) ** (-n)) / (d * r))
 
-#change the units in the range values of the underlying data 
+#change the units in the range values of the underlying data
 
 owner_results["Percent of Units Affordable"] = 0
 for idx, rows in owner_results.iterrows():
@@ -510,7 +515,7 @@ for idx, rows in renter_results.iterrows():
         renter_results.at[idx, "Percent of Units Affordable"] = 0
 
 
-#Find the availability of affordable units 
+#Find the availability of affordable units
 owner_percent_affordable = sum(
     owner_results["Available Units"][owner_results["range_max"] <= max_affordable_price]
 ) / sum(owner_results["estimate"])
@@ -526,6 +531,8 @@ owner_results["Affordable Units"] = round(
 renter_results["Affordable Units"] = round(
     renter_results["Percent of Units Affordable"] * renter_results["Available Units"]
 )
+
+----
 
 
 owner_results["Range"] = (
@@ -549,7 +556,7 @@ total_affordable_units = round(
 
 st.header("Results")
 
-#this is the final container that holds the result of the baseline calculations 
+#this is the final container that holds the result of the baseline calculations
 with st.container():
 
     with st.container():
