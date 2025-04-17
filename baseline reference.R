@@ -13,12 +13,13 @@ source('./functions/read_acs.R')
 source('./functions/county_ami.R')
 
 
+
 end_year = 2021
 n_year = 5
 
-selected_tables <- c('b25063', 'b25075', 'b25038')
+selected_tables <- c('b25056', 'b25075', 'b25038')
 
-selected_summary_levels <- c('055', '162')
+selected_summary_levels <- c('055', '162','250')
 
 
 acs_dl <- read_acs(table_name = selected_tables,
@@ -27,9 +28,9 @@ acs_dl <- read_acs(table_name = selected_tables,
                    summary_levels = selected_summary_levels,
                    excluded_cols = c('sumlevel',
                                       'universe')) %>%
-           filter(!measure_id %in% c('B25063_027',
-                                     'B25063_001',
-                                     'B25063_002',
+           filter(!measure_id %in% c('B25056_027',
+                                     'B25056_001',
+                                     'B25056_002',
                                      'B25038_001',
                                      'B25038_002',
                                      'B25038_009',
@@ -49,7 +50,7 @@ acs_own <- acs_dl %>%
   select(geoid,geography_name,title,range_min,range_max,estimate,margin_of_error)
 
 acs_rent <- acs_dl %>%
-  filter(title == 'GROSS RENT') %>%
+  filter(title == 'CONTRACT RENT') %>%
   mutate(range = case_when(
     str_detect(label, 'Less than') ~ str_replace(label, 'Less than', '$0 to'),
     str_detect(label, 'or more')  ~ str_replace(label, 'or more', 'to $6,000'),
@@ -102,6 +103,13 @@ geos_place_remainders <- geos_dl %>%
 geos_munis <- geos_dl %>%
     filter(sumlevel == '162')
 
+geos_reservations <- geos_dl %>%
+  filter(sumlevel == '250',
+         str_detect(geography_name,'CO')) %>%
+  distinct() %>%
+  rowwise()%>%
+  mutate(county = if_else(geography_name=='Southern Ute Reservation, CO', '08067', '08083'))
+
 county_adjacency <-
     read_csv(
         'https://data.nber.org/census/geo/county-adjacency/2010/county_adjacency2010.csv'
@@ -113,7 +121,7 @@ county_adjacency <-
 geos_localities <- left_join(geos_munis,
                              geos_place_remainders,
                              by = 'geoid') %>%
-    bind_rows(geos_counties)
+    bind_rows(geos_counties,geos_reservations)
 
 locality_adjacency <- geos_localities %>%
     select(geoid, geography_name, county) %>%
@@ -127,15 +135,20 @@ income_limits_hud <- unique(pull(locality_adjacency,county_neighbor)) %>%
 amis_adjacency <- locality_adjacency %>%
     mutate(county_name = str_remove(county_name, ', CO')) %>% 
     left_join(income_limits_hud, by = c('county_neighbor'='geoid'),multiple = "all") %>%
-    mutate(income_limit_text = as.character(income_limit)) %>%
     group_by(geoid,county,il_name,il_year,il_hh_size,income_limit) %>%
     summarise(county_concat = str_c(county_name, collapse = ', '),
               county_id_concat = str_c(county_neighbor, collapse = ' ')) %>%
     ungroup() %>% 
     rowwise() %>% 
+  mutate(il_type = if_else(str_detect(county_id_concat,county),
+                           'Own AMI',
+                           'Neighboring AMI')) %>%
+  group_by(geoid,il_name,il_year,il_hh_size,income_limit, il_type) %>%
+  filter(nchar(county_id_concat) == max(nchar(county_id_concat))) %>%
+  ungroup() %>%
     mutate(il_type = if_else(str_detect(county_id_concat,county),
-                             paste0('Own AMI - ', county_concat),
-        paste0('Neighboring AMI - ', str_c(county_concat, sep = ', ')))) %>%
+                             paste0(il_type,' - ', county_concat),
+        paste0(il_type,' - ', str_c(county_concat, sep = ', ')))) %>%
     ungroup() %>%
     select(geoid, il_name, il_year,il_hh_size, il_type, income_limit) %>%
     distinct()
@@ -148,9 +161,6 @@ state_median_income <- map_dfr(c(2017:2019,2021),
                                                 survey = 'acs1') %>% 
                                transmute(il_year = as.integer(.x),
                                          income_limit = estimate))
-    
-    
-    
 
 localities_state_income <- geos_localities %>% 
     filter(str_sub(geoid,10,11)=='08') %>% 
@@ -163,7 +173,19 @@ localities_state_income <- geos_localities %>%
               il_type = 'State Median Income',
               income_limit)
 
-income_limits_flat <- bind_rows(amis_adjacency,localities_state_income)
+localities_state_income_reservations <- geos_reservations %>% 
+  filter(str_sub(geoid,10,13)%in%c('3925','4470')) %>% 
+  crossing(il_year = as.integer(c(2017:2019,2021))) %>% 
+  left_join(state_median_income, by = 'il_year') %>% 
+  transmute(geoid,
+            il_name = 'State Median Income',
+            il_year,
+            il_hh_size = 0,
+            il_type = 'State Median Income',
+            income_limit)
+
+
+income_limits_flat <- bind_rows(amis_adjacency,localities_state_income,localities_state_income_reservations)
 
 income_limits <- bind_rows(amis_adjacency,localities_state_income) %>% 
     filter(il_year==2021 & il_name == 'State Median Income'|
@@ -217,11 +239,7 @@ baseline <- results %>%
 
 write_csv(baseline,'ACS Baseline Options.csv')
 
-write_csv(income_limits_flat,'income_limits.csv')
-
 write_feather(income_limits_flat,'income_limits.feather')
-
-write_csv(results_acs,'acs.csv')
 
 write_feather(results_acs,'acs.feather')
 
