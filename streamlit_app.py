@@ -5,11 +5,37 @@ from json import dumps, loads
 import io
 import random
 
+# Define this function near the top
+def reset_dependent_fields(*args):
+    # Use st.session_state.get to avoid KeyErrors if a key wasn't set yet
+    trigger_key = st.session_state.get("streamlit_trigger_key", None) # Streamlit sets this internally sometimes, or you can pass explicitly
+
+    # Determine which key actually changed if needed (less reliable without explicit passing)
+    # A simpler approach is to just reset downstream fields based on which widget called the callback.
+    # We know which widget called based on the args we pass. Let's assume args[0] is the key of the widget that changed.
+    changed_key = args[0]
+
+    keys_to_reset = []
+    if changed_key == "jurisdiction_type":
+        keys_to_reset = ["jurisdiction_name", "geoid", "income_limit_type", "year", "income_limit", "hh_size", "median_income_selection"]
+    elif changed_key == "jurisdiction_name":
+        keys_to_reset = ["geoid", "income_limit_type", "year", "income_limit", "hh_size", "median_income_selection"]
+    elif changed_key == "income_limit_type":
+         keys_to_reset = ["year", "income_limit", "hh_size", "median_income_selection"] # Reset year and below
+         if st.session_state.get("income_limit_type") != "Area Median Income":
+             keys_to_reset.append("hh_size") # Ensure hh_size is reset if not AMI
+    elif changed_key == "year":
+         keys_to_reset = ["income_limit", "median_income_selection"] # Reset income limit and below
+    elif changed_key == "income_limit":
+         keys_to_reset = ["median_income_selection"] # Reset final selection
+
+    # Reset the identified keys by setting them to a default (like "" or None) or deleting them
+    for k in keys_to_reset:
+        if k in st.session_state:
+             st.session_state[k] = "" # Or None, or del st.session_state[k]
+
 st.set_page_config(
-    layout="wide",
-    menu_items={
-        "Report a Bug": "https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/b44faba8"
-    },
+    layout="wide"
 )
 st.image("https://cdola.colorado.gov/sites/dola/files/logo.svg")
 st.title("Baseline Assistance Tool")
@@ -175,7 +201,7 @@ with st.container():
             "Step 1: Select a jurisdiction type",
             ["", "County", "Municipality",'Tribe'],
             key="jurisdiction_type",
-            on_change=selection_callback("jurisdiction_type"),
+            on_change=reset_dependent_fields),
         )
 
         try:
@@ -190,7 +216,7 @@ with st.container():
             key="jurisdiction_name",
             help="Tip: Type in the box to search for a "
             + st.session_state["jurisdiction_type"],
-            on_change=selection_callback("jurisdiction_name"),
+            on_change=reset_dependent_fields,
         )
         st.caption(
             "Tip: Type in the box to search for a "
