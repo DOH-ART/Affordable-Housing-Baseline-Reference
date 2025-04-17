@@ -201,7 +201,7 @@ with st.container():
             "Step 1: Select a jurisdiction type",
             ["", "County", "Municipality",'Tribe'],
             key="jurisdiction_type",
-            on_change=reset_dependent_fields),
+            on_change=reset_dependent_fields,
         )
 
         try:
