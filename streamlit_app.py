@@ -7,9 +7,6 @@ import random
 
 st.set_page_config(
     layout="wide",
-    menu_items={
-        "Report a Bug": "https://dola-doh.atlassian.net/rest/collectors/1.0/template/form/b44faba8"
-    },
 )
 st.image("https://cdola.colorado.gov/sites/dola/files/logo.svg")
 st.title("Baseline Assistance Tool")
@@ -128,46 +125,108 @@ income_limit_name_options.insert(0, "")
 
 # Input widgets for sidebar
 
+# Define this function at the top of your script, after imports.
+def parse_and_type_session_state_from_url(session_state):
+    """
+    Parses and type-casts values in st.session_state that were populated
+    from URL query parameters. Modifies session_state in-place.
 
-params_in = st.query_params
+    Args:
+        session_state: The Streamlit session state object (st.session_state).
+    """
+    # Define the expected types for your session state keys derived from URL params.
+    # Add or modify keys and types based on your specific URL parameters.
+    EXPECTED_TYPES = {
+        "year": int,
+        "hh_size": int,
+        "median_income_selection": float,
+        "sale_availability_rate": float,  # e.g., URL might have "21.0" for 21%
+        "inflation_rate": float,          # e.g., URL might have "0.0"
+        "interest_rate": float,           # e.g., URL might have "3.0"
+        "mortgage_term": int,
+        "property_tax": int,
+        "insurance": int,
+        "down_payment": float,            # e.g., URL might have "5.0"
+        # Add other keys that need type conversion.
+        # Keys expected to remain strings (e.g., "jurisdiction_name", "geoid")
+        # do not need to be listed here unless you want to explicitly ensure they are strings.
+    }
+
+    for key, target_type in EXPECTED_TYPES.items():
+        if key in session_state and isinstance(session_state[key], str):
+            try:
+                original_value = session_state[key]
+                if original_value.strip() == "":
+                    # Handle empty strings if necessary, e.g., set to None or a default
+                    # For now, this will likely cause a ValueError below, which is caught.
+                    # Or you could decide: session_state[key] = None; continue
+                    pass
+
+                session_state[key] = target_type(original_value)
+                # For debugging:
+                # print(f"Successfully converted session_state['{key}'] from '{original_value}' to {session_state[key]} (type: {type(session_state[key])})")
+            except ValueError:
+                st.warning(
+                    f"Could not convert URL parameter '{key}' with value '{session_state[key]}' "
+                    f"to the expected type '{target_type.__name__}'. "
+                    f"Please check the URL or the script's type expectation for this parameter. "
+                    f"The value will remain a string, which might cause issues."
+                )
+                # Optionally, you could stop the app if a critical parameter is malformed:
+                # st.error(f"Critical parameter '{key}' is malformed in URL. Halting execution.")
+                # st.stop()
+                # Or set to a default/None:
+                # session_state[key] = None # Or some default
+            except Exception as e:
+                st.error(
+                    f"An unexpected error occurred while converting URL parameter '{key}' "
+                    f"with value '{session_state[key]}' to type '{target_type.__name__}': {e}"
+                )
+
+params_in = st.query_params.to_dict()
 
 
 if len(params_in) > 0 and len(st.session_state) == 0:
+    # This block runs when the page is loaded with URL parameters for the first time in a session.
     try:
-        params_dict = loads(params_in.get("query").pop())
-        for key in list(params_dict.keys()):
-            st.session_state[key] = params_dict[key]
-    except AttributeError:
-        print('Session has unexpected URL components, clearing URL.')
-        st.query_params = {}
+        # Populate session_state from URL parameters
+        for key_from_url, value_from_url in params_in.items():
+            st.session_state[key_from_url] = value_from_url
+        
+        # NOW, PARSE AND TYPE-CAST THE LOADED PARAMETERS
+        parse_and_type_session_state_from_url(st.session_state)
+        
+        # For debugging: show what's in session_state after parsing
+        # st.write("Session state after URL load and type parsing:")
+        # st.json(st.session_state.to_dict()) # .to_dict() for display if needed
+
+    except AttributeError: # Should not happen if params_in is a dict
+        st.error("Error processing URL parameters (AttributeError). Clearing query parameters.")
+        st.query_params.clear() # Use clear() if available, or from_dict({})
+    except Exception as e:
+        st.error(f"An unexpected error occurred while loading state from URL: {e}")
+        st.query_params.clear()
 
 #this function allows for the session state to maintain variables
 def selection_callback(key):
     print(st.session_state)
     if len(st.session_state) > 0:
-        # Update query_params with session state
-        for k, v in st.session_state.to_dict().items():
-            st.query_params[k] = [str(v)] # Update individual query params
+        st.query_params.from_dict(st.session_state.to_dict())
         try:
-            # get the current params dict
-            params_in = st.query_params
-            # set the session state key from the params dict
-            st.session_state[key] = params_in[key][0]
-        except KeyError:
-            print("oops") # if session state key is not in params, handle the KeyError
+            params_in = st.query_params.to_dict()
+        except AttributeError:
+            print("oops")
     elif ValueError and len(st.session_state) > 0:
         st.session_state[key] == ""
-        # replace with this line
-        for k, v in st.session_state.to_dict().items():
-            st.query_params[k] = v  # Update individual query params
+        st.query_params.from_dict(st.session_state.to_dict())
         try:
-            st.session_state[key] = params_in[key][0]  # changed line
+            st.session_state[key] = params_in[key]
         except KeyError:
             print("New session")
     else:
         print("New session")
 
-#This container is for holding all the variables that different jurisdictions input
+#This container is for holding all the variables that different jurisdictions input 
 with st.container():
     with st.expander("Start here", expanded=True):
 
@@ -220,7 +279,7 @@ with st.container():
             help="Select one of three Income Limit Types, we suggest Median Family Income because it is simplest, and likely most accurate.",
         )
 
-        st.query_params = st.session_state.to_dict()  # replaced here
+        st.query_params.from_dict(st.session_state.to_dict())
 
         try:
             if st.session_state["income_limit_type"] == "":
@@ -251,14 +310,14 @@ with st.container():
             + " because it is likely most accurate.",
         )
 
-        st.query_params = st.session_state.to_dict()  # replaced here
+        st.query_params.from_dict(st.session_state.to_dict())
 
         try:
             if st.session_state["year"] == "":
                 st.stop()
         except KeyError:
             st.stop()
-
+    
         adjacency_options = (
             income_data[
                 (income_data["geoid"] == st.session_state["geoid"])
@@ -285,7 +344,9 @@ with st.container():
                     help="Select the counties that the income limit is taken from, your Own County is likely most appropriate.",
                 )
 
-                st.query_params = st.session_state.to_dict()  # replaced here
+                st.query_params.from_dict(
+                    st.session_state.to_dict()
+                )
         except KeyError:
             st.stop()
 
@@ -304,7 +365,7 @@ with st.container():
                 key="hh_size",
                 help="The average (rounded) size of households in Colorado is 3, and is likely the most appropriate selection.",
             )
-            st.query_params = st.session_state.to_dict()  # replaced here
+            st.query_params.from_dict(st.session_state.to_dict())
         else:
             st.session_state["hh_size"] = 0
         if (
@@ -340,7 +401,7 @@ with st.container():
             key="sale_availability_rate",
             help="The percent of home-ownership stock expected to be sold over the commitment period.",
             format="%f%%",
-        )
+        )   
         st.caption('''Only for-sale homes that can be purchased over the commitment period by a household at 100% of the median income are considered affordable.
                    The American Community Survey does not provide data on home sales, but it does provide data on moves into owner-occupied stock housing stock.
                    Roughly 21% of homeowners in Colorado moved into their home from 2019 to 2021, which is provided as the devault value above.''')
@@ -348,14 +409,14 @@ with st.container():
             st.session_state[
                 "sale_availability_rate"
             ] = 0.21
-        st.query_params = st.session_state.to_dict()  # replaced here
+        st.query_params.from_dict(st.session_state.to_dict())
 
         st.slider(
             "Inflation Rate", 0.0, 100.0, 0.0, 0.1, key="inflation_rate", format="%f%%"
         )
         if "inflation_rate" not in st.session_state:
             st.session_state["inflation_rate"] = 0.1
-        st.query_params = st.session_state.to_dict()  # replaced here
+        st.query_params.from_dict(st.session_state.to_dict())
         st.caption('Adjust the prices of apartments and for-sale stock to correct for price increases caused by inflation. Moving this slider will calculate the movement of units between cost brackets using statistics based on your selection.')
     with st.expander("Homebuyer Variables", expanded=True):
         st.write('Adjust these homebuyer variables to change the price of an affordable for-sale home based on appropriate factors in your jurisdiction. Your choices will be used to calculate the maximum mortgage payment that is affordable at 100% of the median income.')
@@ -394,7 +455,7 @@ with st.container():
             "Down Payment", 0.0, 100.0, 5.0, 1.0, key="down_payment", format="%f%%"
         )
 
-#This is where the math from the variables is added to the udnerlying data
+#This is where the math from the variables is added to the udnerlying data 
 
 renter_income_limit = round(st.session_state["median_income_selection"] * 0.6)
 owner_income_limit = st.session_state["median_income_selection"]
@@ -407,18 +468,20 @@ owner_results["range_max"][owner_results["range_max"] < 200000] = 199999
 
 
 owner_results = pd.pivot_table(
-    owner_results, values=["estimate"], index=["range_min", "range_max"], aggfunc=sum
+    owner_results, values=["estimate"], index=["range_min", "range_max"], aggfunc="sum"
 ).reset_index()
 
 owner_max_prices = owner_results["range_max"].to_list()
 
 random.seed(123)
-inflation_rate = st.session_state["inflation_rate"] / 100
+inflation_rate = float(st.session_state["inflation_rate"]) / 100
 rand_list = [0] * len(owner_results.index)
 for idx, row in owner_results.iterrows():
     row_index = owner_max_prices.index(row["range_max"])
     for i in range(0, int(row["estimate"])):
-        x = random.randint(row["range_min"], row["range_max"])
+        x = random.randint(
+            row["range_min"].astype(int),
+            row["range_max"].astype(int))
         x = x * (1 + inflation_rate)
         if x > row["range_max"]:
             try:
@@ -438,7 +501,7 @@ renter_results = acs_data[
 renter_results["range_max"][renter_results["range_max"] < 800] = 799
 renter_results["range_min"][renter_results["range_max"] < 800] = 0
 renter_results = pd.pivot_table(
-    renter_results, values="estimate", index=["range_max", "range_min"], aggfunc=sum
+    renter_results, values="estimate", index=["range_max", "range_min"], aggfunc="sum"
 ).reset_index()
 
 renter_max_prices = renter_results["range_max"].to_list()
@@ -447,7 +510,8 @@ rand_list = [0] * len(renter_results.index)
 for idx, row in renter_results.iterrows():
     row_index = renter_max_prices.index(row["range_max"])
     for i in range(0, int(row["estimate"])):
-        x = random.randint(row["range_min"], row["range_max"])
+        x = random.randint(row["range_min"].astype(int),
+                           row["range_max"].astype(int))
         x = x * (1 + inflation_rate)
         if x > row["range_max"]:
             try:
@@ -483,12 +547,12 @@ n = st.session_state["mortgage_term"]
 
 max_affordable_price = round((A - A * (r + 1) ** (-n)) / (d * r))
 
-#change the units in the range values of the underlying data
+#change the units in the range values of the underlying data 
 
-owner_results["Percent of Units Affordable"] = 0
+owner_results["Percent of Units Affordable"] = 0.0
 for idx, rows in owner_results.iterrows():
     if rows["range_max"] <= max_affordable_price:
-        owner_results.at[idx, "Percent of Units Affordable"] = 1
+        owner_results.at[idx, "Percent of Units Affordable"] = 1.0
     elif (
         rows["range_min"] <= max_affordable_price
         and rows["range_max"] >= max_affordable_price
@@ -497,13 +561,13 @@ for idx, rows in owner_results.iterrows():
             (max_affordable_price - rows["range_min"]) / (rows["range_max"] - rows["range_min"])
         )
     else:
-        owner_results.at[idx, "Percent of Units Affordable"] = 0
+        owner_results.at[idx, "Percent of Units Affordable"] = 0.0
 
 
-renter_results["Percent of Units Affordable"] = 0
+renter_results["Percent of Units Affordable"] = 0.0
 for idx, rows in renter_results.iterrows():
     if rows["range_max"] <= max_affordable_rent:
-        renter_results.at[idx, "Percent of Units Affordable"] = 1
+        renter_results.at[idx, "Percent of Units Affordable"] = 1.0
     elif (
         rows["range_min"] <= max_affordable_rent
         and rows["range_max"] >= max_affordable_rent
@@ -512,10 +576,10 @@ for idx, rows in renter_results.iterrows():
             (max_affordable_rent - rows["range_min"]) / (rows["range_max"] - rows["range_min"])
         )
     else:
-        renter_results.at[idx, "Percent of Units Affordable"] = 0
+        renter_results.at[idx, "Percent of Units Affordable"] = 0.0
 
 
-#Find the availability of affordable units
+#Find the availability of affordable units 
 owner_percent_affordable = sum(
     owner_results["Available Units"][owner_results["range_max"] <= max_affordable_price]
 ) / sum(owner_results["estimate"])
@@ -531,8 +595,6 @@ owner_results["Affordable Units"] = round(
 renter_results["Affordable Units"] = round(
     renter_results["Percent of Units Affordable"] * renter_results["Available Units"]
 )
-
-----
 
 
 owner_results["Range"] = (
@@ -556,7 +618,7 @@ total_affordable_units = round(
 
 st.header("Results")
 
-#this is the final container that holds the result of the baseline calculations
+#this is the final container that holds the result of the baseline calculations 
 with st.container():
 
     with st.container():
